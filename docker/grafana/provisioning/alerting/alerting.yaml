@@ -1,0 +1,4 @@
+apiVersion: 1
+
+ruleFiles:
+  - /etc/grafana/provisioning/alerting/*.json
