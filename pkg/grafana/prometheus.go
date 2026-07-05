@@ -14,13 +14,7 @@ type MetricCount struct {
 	Value int64  `json:"value"`
 }
 
-type TSDBStatusSeriesCountByMetricName struct {
-	Data struct {
-		SeriesCountByMetricName []MetricCount `json:"seriesCountByMetricName"`
-	} `json:"data"`
-}
-
-func (c *Client) GetTopKMetricsFromPrometheusDatasourceTSDBStatus(datasourceUID string, limit int) TSDBStatusSeriesCountByMetricName {
+func (c *Client) GetTopTSDBMetrics(datasourceUID string, limit int) []MetricCount {
 	tsdbURI := fmt.Sprintf("/api/datasources/proxy/uid/%s/api/v1/status/tsdb?limit=%d", datasourceUID, limit)
 	req, err := http.NewRequest("GET", c.URL+tsdbURI, nil)
 	req.SetBasicAuth(c.Username, c.Password)
@@ -37,12 +31,16 @@ func (c *Client) GetTopKMetricsFromPrometheusDatasourceTSDBStatus(datasourceUID 
 	if err != nil {
 		log.Fatal(err)
 	}
-	var seriesCountByMetricName TSDBStatusSeriesCountByMetricName
+	var seriesCountByMetricName struct {
+		Data struct {
+			SeriesCountByMetricName []MetricCount `json:"seriesCountByMetricName"`
+		} `json:"data"`
+	}
 	if err := json.Unmarshal(result, &seriesCountByMetricName); err != nil {
 		log.Fatal(err)
 	}
 
-	return seriesCountByMetricName
+	return seriesCountByMetricName.Data.SeriesCountByMetricName
 }
 
 type QueryResponse struct {
