@@ -1,0 +1,22 @@
+[
+  {
+    "id": 1,
+    "uid": "node_exporter_host_down",
+    "title": "Host Down"
+  },
+  {
+    "id": 2,
+    "uid": "node_exporter_high_cpu",
+    "title": "High CPU Usage"
+  },
+  {
+    "id": 3,
+    "uid": "node_exporter_disk_filling",
+    "title": "Disk Space Running Low"
+  },
+  {
+    "id": 4,
+    "uid": "node_exporter_high_memory",
+    "title": "High Memory Usage"
+  }
+]

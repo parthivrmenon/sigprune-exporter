@@ -55,7 +55,6 @@ func (c *Client) GetAlertRules() ([]AlertRule, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return alertRules, nil
 }
 

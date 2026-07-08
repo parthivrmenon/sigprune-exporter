@@ -1,0 +1,34 @@
+{
+  "meta": {
+    "type": "db"
+  },
+  "dashboard": {
+    "id": 123561410875392,
+    "uid": "nodeExporterBasic",
+    "title": "Node Exporter Basic",
+    "panels": [
+      {
+        "id": 323,
+        "targets": [
+          {
+            "expr": "rate(node_pressure_cpu_waiting_seconds_total{instance=\"$node\",job=\"$job\"}[$__rate_interval])",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(node_pressure_memory_waiting_seconds_total{instance=\"$node\",job=\"$job\"}[$__rate_interval])",
+            "refId": "B"
+          }
+        ]
+      },
+      {
+        "id": 20,
+        "targets": [
+          {
+            "expr": "100 * (1 - avg(rate(node_cpu_seconds_total{mode=\"idle\",instance=\"$node\",job=\"$job\"}[$__rate_interval])))",
+            "refId": "A"
+          }
+        ]
+      }
+    ]
+  }
+}

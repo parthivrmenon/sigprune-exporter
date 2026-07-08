@@ -1,0 +1,96 @@
+{
+  "status": "success",
+  "data": {
+    "headStats": {
+      "numSeries": 1889,
+      "numLabelPairs": 988,
+      "chunkCount": 3778,
+      "minTime": 1783389194122,
+      "maxTime": 1783395996735
+    },
+    "seriesCountByMetricName": [
+      {
+        "name": "node_filesystem_device_error",
+        "value": 59
+      },
+      {
+        "name": "prometheus_http_requests_total",
+        "value": 59
+      },
+      {
+        "name": "node_filesystem_readonly",
+        "value": 59
+      },
+      {
+        "name": "node_scrape_collector_success",
+        "value": 48
+      },
+      {
+        "name": "node_scrape_collector_duration_seconds",
+        "value": 48
+      }
+    ],
+    "labelValueCountByLabelName": [
+      {
+        "name": "__name__",
+        "value": 562
+      },
+      {
+        "name": "le",
+        "value": 88
+      },
+      {
+        "name": "handler",
+        "value": 59
+      },
+      {
+        "name": "mountpoint",
+        "value": 59
+      },
+      {
+        "name": "collector",
+        "value": 48
+      }
+    ],
+    "memoryInBytesByLabelName": [
+      {
+        "name": "__name__",
+        "value": 81449
+      },
+      {
+        "name": "instance",
+        "value": 49980
+      },
+      {
+        "name": "job",
+        "value": 31818
+      },
+      {
+        "name": "device",
+        "value": 10845
+      },
+      {
+        "name": "mountpoint",
+        "value": 10089
+      }
+    ],
+    "seriesCountByLabelValuePair": [
+      {
+        "name": "job=node-exporter",
+        "value": 1161
+      },
+      {
+        "name": "instance=node_exporter:9100",
+        "value": 1161
+      },
+      {
+        "name": "job=prometheus",
+        "value": 728
+      },
+      {
+        "name": "instance=localhost:9090",
+        "value": 728
+      }
+    ]
+  }
+}

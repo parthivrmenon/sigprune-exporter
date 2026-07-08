@@ -14,7 +14,7 @@ docker compose -f docker/docker-compose.yml up -d
 
 Run the following command to start the sigprune service:
 ```bash
-go run sigprune_exporter.go -user admin -password admin
+go run sigprune_exporter.go -user admin -password admin -datasource PBFA97CFB590B2093
 ```
 
 ## Shuting down

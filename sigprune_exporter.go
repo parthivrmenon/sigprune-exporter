@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"sigprune/pkg/grafana"
 	"sigprune/pkg/scraper"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -43,34 +42,7 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
-	// get top K metrics from Prometheus TSDB status
-	topTSDBMetrics := e.scraper.GetTopTSDBMetrics()
-
-	// get grafana dashboards metrics
-	usedMetrics := e.scraper.GetGrafanaDashboardMetrics()
-	fmt.Println("Got", len(usedMetrics), "used metrics from dashboards")
-
-	// get grafana alert rule metrics
-	alertMetrics := e.scraper.GetGrafanaAlertRuleMetrics()
-	fmt.Println("Got", len(alertMetrics), "used metrics from alert rules")
-
-	// combine used metrics
-	usedMetrics = append(usedMetrics, alertMetrics...)
-
-	// create a used metrics Set for lookup
-	usedSet := make(map[string]bool, len(usedMetrics))
-	for _, m := range usedMetrics {
-		usedSet[m] = true
-	}
-
-	// Filter out used metrics
-	var unusedMetrics []string
-	for _, metric := range topTSDBMetrics {
-		if !usedSet[metric.Name] {
-			unusedMetrics = append(unusedMetrics, metric.Name)
-		}
-	}
-	fmt.Println("Got", len(unusedMetrics), "unused metrics")
+	unusedMetrics := e.scraper.GetUnusedMetrics()
 
 	for _, metric := range unusedMetrics {
 		jobs := e.scraper.GetJobsForMetric(metric)
@@ -108,10 +80,7 @@ func main() {
 	exporter := NewExporter(*tsdbMetricsLimit, *grafanaURL, *adminUser, *adminPassword, *datasource)
 
 	// Test Grafana connection before starting
-	g := grafana.NewClient(*grafanaURL, *adminUser, *adminPassword)
-	if err := g.TestConnection(); err != nil {
-		log.Fatal("Failed to connect to Grafana:", err)
-	}
+	exporter.scraper.TestConnection()
 
 	reg := prometheus.NewRegistry()
 

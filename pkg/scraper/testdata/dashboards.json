@@ -1,0 +1,16 @@
+[
+  {
+    "id": 123561410875392,
+    "uid": "nodeExporterBasic",
+    "orgId": 1,
+    "title": "Node Exporter Basic",
+    "uri": "db/node-exporter-basic",
+    "url": "/d/nodeExporterBasic/node-exporter-basic",
+    "slug": "",
+    "type": "dash-db",
+    "tags": ["linux"],
+    "isStarred": false,
+    "sortMeta": 0,
+    "isDeleted": false
+  }
+]
