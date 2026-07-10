@@ -49,3 +49,46 @@ func TestExtractMetricNames(t *testing.T) {
 		})
 	}
 }
+
+func TestExtractLabelNames(t *testing.T) {
+	tests := []struct {
+		name     string
+		expr     string
+		expected []string
+	}{
+		{
+			name:     "complex arithmetic with multiple label matchers",
+			expr:     `100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle",instance="$node",job="$job"}[$__rate_interval])))`,
+			expected: []string{"mode", "instance", "job"},
+		},
+		{
+			name:     "simple metric with label matchers",
+			expr:     `node_memory_MemTotal_bytes{instance="$node",job="$job"}`,
+			expected: []string{"instance", "job"},
+		},
+		{
+			name:     "binary operation with duplicate labels",
+			expr:     `node_time_seconds{instance="$node",job="$job"} - node_boot_time_seconds{instance="$node",job="$job"}`,
+			expected: []string{"instance", "job"},
+		},
+		{
+			name:     "rate with label matchers",
+			expr:     `rate(node_network_receive_bytes_total{instance="$node",job="$job",device="eth0"}[$__rate_interval])*8`,
+			expected: []string{"instance", "job", "device"},
+		},
+		{
+			name:     "metric without label matchers",
+			expr:     `up`,
+			expected: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := utils.ExtractLabelNames(tt.expr)
+			if !reflect.DeepEqual(got, tt.expected) {
+				t.Errorf("utils.ExtractLabelNames(%q) = %v, want %v", tt.expr, got, tt.expected)
+			}
+		})
+	}
+}

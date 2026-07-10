@@ -17,6 +17,7 @@ const namespace = "sigprune"
 type Exporter struct {
 	scraper                             *scraper.Scraper
 	sigpruneUnusedMetricCardinalityDesc *prometheus.Desc
+	sigpruneUnusedLabelCardinalityDesc  *prometheus.Desc
 }
 
 func NewExporter(tsdbMetricsLimit int, grafanaURL string, adminUser string, adminPassword string, datasource string) *Exporter {
@@ -34,17 +35,25 @@ func NewExporter(tsdbMetricsLimit int, grafanaURL string, adminUser string, admi
 			[]string{"job", "metric"},
 			nil,
 		),
+		sigpruneUnusedLabelCardinalityDesc: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "", "unused_label_cardinality"),
+			"Series count of a top-K unused label",
+			[]string{"job", "label"},
+			nil,
+		),
 	}
 }
 
 func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	ch <- e.sigpruneUnusedMetricCardinalityDesc
+	ch <- e.sigpruneUnusedLabelCardinalityDesc
+
 }
 
 func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
-	unusedMetrics := e.scraper.GetUnusedMetrics()
+	unusedMetricsAndLabels := e.scraper.GetUnusedMetricsAndLabels()
 
-	for _, metric := range unusedMetrics {
+	for _, metric := range unusedMetricsAndLabels.UnusedMetrics {
 		jobs := e.scraper.GetJobsForMetric(metric)
 		for job, count := range jobs {
 			ch <- prometheus.MustNewConstMetric(
@@ -52,6 +61,18 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 				prometheus.GaugeValue,
 				float64(count),
 				job, metric,
+			)
+		}
+	}
+
+	for _, label := range unusedMetricsAndLabels.UnusedLabels {
+		jobs := e.scraper.GetJobsForLabel(label)
+		for job, count := range jobs {
+			ch <- prometheus.MustNewConstMetric(
+				e.sigpruneUnusedLabelCardinalityDesc,
+				prometheus.GaugeValue,
+				float64(count),
+				job, label,
 			)
 		}
 	}

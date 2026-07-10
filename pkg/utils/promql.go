@@ -47,3 +47,34 @@ func ExtractMetricNames(expr string) []string {
 	})
 	return names
 }
+
+// ExtractLabelNames extracts label names from PromQL Expressions
+// Handles template variables by sanitizing them before parsing
+func ExtractLabelNames(expr string) []string {
+	p := parser.NewParser(parser.Options{})
+	ast, err := p.ParseExpr(sanitizeExpr(expr))
+	if err != nil {
+		return []string{}
+	}
+	var names []string
+	seen := make(map[string]bool)
+	parser.Inspect(ast, func(node parser.Node, _ []parser.Node) error {
+		if vs, ok := node.(*parser.VectorSelector); ok {
+			for _, matcher := range vs.LabelMatchers {
+				// Skip __name__ as it's an internal label
+				if matcher.Name == "__name__" {
+					continue
+				}
+				if !seen[matcher.Name] {
+					names = append(names, matcher.Name)
+					seen[matcher.Name] = true
+				}
+			}
+		}
+		return nil
+	})
+	if names == nil {
+		return []string{}
+	}
+	return names
+}

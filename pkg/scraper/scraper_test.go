@@ -62,9 +62,10 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func TestGetUnusedMetrics(t *testing.T) {
+func TestGetUnusedMetricsAndLabels(t *testing.T) {
 	s := NewScraper(5, mockGrafanaServer.URL, "notarealuser", "notarealpassword", "notarealdatasource")
-	unusedMetrics := s.GetUnusedMetrics()
+	result := s.GetUnusedMetricsAndLabels()
+
 	expectedUnusedMetrics := []string{
 		"prometheus_http_requests_total",
 		"node_filesystem_device_error",
@@ -72,22 +73,43 @@ func TestGetUnusedMetrics(t *testing.T) {
 		"node_scrape_collector_success",
 		"node_scrape_collector_duration_seconds",
 	}
-	if len(unusedMetrics) != len(expectedUnusedMetrics) {
-		t.Fatalf("Expected %d metrics, got %d: %v", len(expectedUnusedMetrics), len(unusedMetrics), unusedMetrics)
+
+	expectedUnusedLabels := []string{
+		"handler",
+		"collector",
+	}
+
+	if len(result.UnusedMetrics) != len(expectedUnusedMetrics) {
+		t.Fatalf("Expected %d metrics, got %d: %v", len(expectedUnusedMetrics), len(result.UnusedMetrics), result.UnusedMetrics)
 	}
 
 	for _, expected := range expectedUnusedMetrics {
 		found := false
-		for _, metric := range unusedMetrics {
+		for _, metric := range result.UnusedMetrics {
 			if metric == expected {
 				found = true
 				break
 			}
 		}
 		if !found {
-			t.Fatalf("Expected metric %s not found in %v", expected, unusedMetrics)
+			t.Fatalf("Expected metric %s not found in %v", expected, result.UnusedMetrics)
 		}
-
 	}
 
+	if len(result.UnusedLabels) != len(expectedUnusedLabels) {
+		t.Fatalf("Expected %d labels, got %d: %v", len(expectedUnusedLabels), len(result.UnusedLabels), result.UnusedLabels)
+	}
+
+	for _, expected := range expectedUnusedLabels {
+		found := false
+		for _, label := range result.UnusedLabels {
+			if label == expected {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("Expected label %s not found in %v", expected, result.UnusedLabels)
+		}
+	}
 }
