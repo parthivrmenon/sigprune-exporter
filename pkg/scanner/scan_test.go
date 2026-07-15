@@ -1,4 +1,4 @@
-package scraper
+package scanner
 
 import (
 	"net/http"
@@ -62,8 +62,20 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
+func TestGetUnusedMetricsAndLabelsWithLimit(t *testing.T) {
+	s := NewScanner(5, mockGrafanaServer.URL, "notarealuser", "notarealpassword", "notarealdatasource", 1, 1)
+	result := s.GetUnusedMetricsAndLabels()
+
+	if len(result.UnusedMetrics) != 1 {
+		t.Fatalf("expected 1 metric, got %d: %v", len(result.UnusedMetrics), result.UnusedMetrics)
+	}
+	if len(result.UnusedLabels) != 1 {
+		t.Fatalf("expected 1 label, got %d: %v", len(result.UnusedLabels), result.UnusedLabels)
+	}
+}
+
 func TestGetUnusedMetricsAndLabels(t *testing.T) {
-	s := NewScraper(5, mockGrafanaServer.URL, "notarealuser", "notarealpassword", "notarealdatasource")
+	s := NewScanner(5, mockGrafanaServer.URL, "notarealuser", "notarealpassword", "notarealdatasource", 5, 5)
 	result := s.GetUnusedMetricsAndLabels()
 
 	expectedUnusedMetrics := []string{

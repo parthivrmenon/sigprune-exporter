@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"sigprune/pkg/scraper"
+	"sigprune/pkg/scanner"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -15,19 +15,21 @@ import (
 const namespace = "sigprune"
 
 type Exporter struct {
-	scraper                             *scraper.Scraper
+	scanner                             *scanner.Scanner
 	sigpruneUnusedMetricCardinalityDesc *prometheus.Desc
 	sigpruneUnusedLabelCardinalityDesc  *prometheus.Desc
 }
 
-func NewExporter(tsdbMetricsLimit int, grafanaURL string, adminUser string, adminPassword string, datasource string) *Exporter {
+func NewExporter(tsdbMetricsLimit int, grafanaURL string, adminUser string, adminPassword string, datasource string, exportLimitMetrics int, exportLimitLabels int) *Exporter {
 	return &Exporter{
-		scraper: scraper.NewScraper(
+		scanner: scanner.NewScanner(
 			tsdbMetricsLimit,
 			grafanaURL,
 			adminUser,
 			adminPassword,
 			datasource,
+			exportLimitMetrics,
+			exportLimitLabels,
 		),
 		sigpruneUnusedMetricCardinalityDesc: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "", "unused_metric_cardinality"),
@@ -51,10 +53,10 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
-	unusedMetricsAndLabels := e.scraper.GetUnusedMetricsAndLabels()
+	unusedMetricsAndLabels := e.scanner.GetUnusedMetricsAndLabels()
 
 	for _, metric := range unusedMetricsAndLabels.UnusedMetrics {
-		jobs := e.scraper.GetJobsForMetric(metric)
+		jobs := e.scanner.GetJobsForMetric(metric)
 		for job, count := range jobs {
 			ch <- prometheus.MustNewConstMetric(
 				e.sigpruneUnusedMetricCardinalityDesc,
@@ -66,7 +68,7 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	}
 
 	for _, label := range unusedMetricsAndLabels.UnusedLabels {
-		jobs := e.scraper.GetJobsForLabel(label)
+		jobs := e.scanner.GetJobsForLabel(label)
 		for job, count := range jobs {
 			ch <- prometheus.MustNewConstMetric(
 				e.sigpruneUnusedLabelCardinalityDesc,
@@ -83,12 +85,14 @@ func main() {
 	fmt.Println("starting sigprune-exporter...")
 
 	var (
-		addr             = flag.String("listen-address", ":8080", "The address to listen on for HTTP requests.")
-		grafanaURL       = flag.String("grafana", "http://localhost:3000", "Grafana URL")
-		datasource       = flag.String("datasource", "", "Prometheus Datasource UID to collect metrics from")
-		tsdbMetricsLimit = flag.Int("tsdb-metrics-limit", 10, "Number of top metrics to analyze from TSDB status")
-		adminUser        = flag.String("user", "", "Username for authentication")
-		adminPassword    = flag.String("password", "", "Password for authentication")
+		addr               = flag.String("listen-address", ":8080", "The address to listen on for HTTP requests.")
+		grafanaURL         = flag.String("grafana", "http://localhost:3000", "Grafana URL")
+		datasource         = flag.String("datasource", "", "Prometheus Datasource UID to collect metrics from")
+		tsdbMetricsLimit   = flag.Int("tsdb-metrics-limit", 10000, "Number of top metrics to analyze from TSDB status")
+		exportLimitMetrics = flag.Int("metrics-limit", 50, "Limit the number of metrics to export")
+		exportLimitLabels  = flag.Int("labels-limit", 50, "Limit the number of labels to export")
+		adminUser          = flag.String("user", "", "Username for authentication")
+		adminPassword      = flag.String("password", "", "Password for authentication")
 	)
 	flag.Parse()
 	if *datasource == "" {
@@ -97,11 +101,17 @@ func main() {
 	if *adminUser == "" || *adminPassword == "" {
 		log.Fatal("Username and password are required to access Grafana")
 	}
+	if *exportLimitMetrics <= 0 {
+		log.Fatal("metrics-limit must be a positive integer")
+	}
+	if *exportLimitLabels <= 0 {
+		log.Fatal("labels-limit must be a positive integer")
+	}
 
-	exporter := NewExporter(*tsdbMetricsLimit, *grafanaURL, *adminUser, *adminPassword, *datasource)
+	exporter := NewExporter(*tsdbMetricsLimit, *grafanaURL, *adminUser, *adminPassword, *datasource, *exportLimitMetrics, *exportLimitLabels)
 
 	// Test Grafana connection before starting
-	exporter.scraper.TestConnection()
+	exporter.scanner.TestConnection()
 
 	reg := prometheus.NewRegistry()
 

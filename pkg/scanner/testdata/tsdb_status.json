@@ -15,11 +15,11 @@
       },
       {
         "name": "node_filesystem_device_error",
-        "value": 59
+        "value": 58
       },
       {
         "name": "node_filesystem_readonly",
-        "value": 59
+        "value": 57
       },
       {
         "name": "node_scrape_collector_success",
@@ -27,7 +27,7 @@
       },
       {
         "name": "node_scrape_collector_duration_seconds",
-        "value": 48
+        "value": 47
       }
     ],
     "labelValueCountByLabelName": [
