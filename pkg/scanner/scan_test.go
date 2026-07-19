@@ -63,7 +63,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestGetUnusedMetricsAndLabelsWithLimit(t *testing.T) {
-	s := NewScanner(5, mockGrafanaServer.URL, "notarealuser", "notarealpassword", "notarealdatasource", 1, 1)
+	s := NewScanner(5, mockGrafanaServer.URL, "notarealuser", "notarealpassword", "", "notarealdatasource", 1, 1)
 	result := s.GetUnusedMetricsAndLabels()
 
 	if len(result.UnusedMetrics) != 1 {
@@ -75,7 +75,7 @@ func TestGetUnusedMetricsAndLabelsWithLimit(t *testing.T) {
 }
 
 func TestGetUnusedMetricsAndLabels(t *testing.T) {
-	s := NewScanner(5, mockGrafanaServer.URL, "notarealuser", "notarealpassword", "notarealdatasource", 5, 5)
+	s := NewScanner(5, mockGrafanaServer.URL, "notarealuser", "notarealpassword", "", "notarealdatasource", 5, 5)
 	result := s.GetUnusedMetricsAndLabels()
 
 	expectedUnusedMetrics := []string{

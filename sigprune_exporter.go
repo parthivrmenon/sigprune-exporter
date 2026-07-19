@@ -20,13 +20,14 @@ type Exporter struct {
 	sigpruneUnusedLabelCardinalityDesc  *prometheus.Desc
 }
 
-func NewExporter(tsdbMetricsLimit int, grafanaURL string, adminUser string, adminPassword string, datasource string, exportLimitMetrics int, exportLimitLabels int) *Exporter {
+func NewExporter(tsdbMetricsLimit int, grafanaURL string, adminUser string, adminPassword string, apiKey string, datasource string, exportLimitMetrics int, exportLimitLabels int) *Exporter {
 	return &Exporter{
 		scanner: scanner.NewScanner(
 			tsdbMetricsLimit,
 			grafanaURL,
 			adminUser,
 			adminPassword,
+			apiKey,
 			datasource,
 			exportLimitMetrics,
 			exportLimitLabels,
@@ -93,13 +94,23 @@ func main() {
 		exportLimitLabels  = flag.Int("labels-limit", 50, "Limit the number of labels to export")
 		adminUser          = flag.String("user", "", "Username for authentication")
 		adminPassword      = flag.String("password", "", "Password for authentication")
+		apiKey             = flag.String("api-key", "", "Grafana API key for authentication")
 	)
 	flag.Parse()
 	if *datasource == "" {
 		log.Fatal("datasourceUID for a Prometheus type datasource MUST be provided")
 	}
-	if *adminUser == "" || *adminPassword == "" {
-		log.Fatal("Username and password are required to access Grafana")
+	usingBasicAuth := *adminUser != "" || *adminPassword != ""
+	usingAPIKey := *apiKey != ""
+
+	if usingBasicAuth && usingAPIKey {
+		log.Fatal("Provide either --api-key or --user/--password, not both")
+	}
+	if !usingBasicAuth && !usingAPIKey {
+		log.Fatal("Authentication required: provide --api-key or --user and --password")
+	}
+	if usingBasicAuth && (*adminUser == "" || *adminPassword == "") {
+		log.Fatal("Both --user and --password are required when using basic auth")
 	}
 	if *exportLimitMetrics <= 0 {
 		log.Fatal("metrics-limit must be a positive integer")
@@ -108,7 +119,7 @@ func main() {
 		log.Fatal("labels-limit must be a positive integer")
 	}
 
-	exporter := NewExporter(*tsdbMetricsLimit, *grafanaURL, *adminUser, *adminPassword, *datasource, *exportLimitMetrics, *exportLimitLabels)
+	exporter := NewExporter(*tsdbMetricsLimit, *grafanaURL, *adminUser, *adminPassword, *apiKey, *datasource, *exportLimitMetrics, *exportLimitLabels)
 
 	// Test Grafana connection before starting
 	exporter.scanner.TestConnection()

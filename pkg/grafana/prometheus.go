@@ -31,10 +31,10 @@ type LabelCount struct {
 func (c *Client) GetTSDBStatus(datasourceUID string, limit int) TSDBStatus {
 	tsdbURI := fmt.Sprintf("/api/datasources/proxy/uid/%s/api/v1/status/tsdb?limit=%d", datasourceUID, limit)
 	req, err := http.NewRequest("GET", c.URL+tsdbURI, nil)
-	req.SetBasicAuth(c.Username, c.Password)
 	if err != nil {
 		log.Fatal(err)
 	}
+	c.setAuth(req)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -70,7 +70,7 @@ func (c *Client) GetPrometheusJobsForMetric(datasourceUID string, metricName str
 	if err != nil {
 		log.Fatal(err)
 	}
-	req.SetBasicAuth(c.Username, c.Password)
+	c.setAuth(req)
 	params := req.URL.Query()
 	params.Add("query", fmt.Sprintf("count by (job) (%s)", metricName))
 	req.URL.RawQuery = params.Encode()
@@ -106,7 +106,7 @@ func (c *Client) GetPrometheusJobsForLabel(datasourceUID string, labelName strin
 	if err != nil {
 		log.Fatal(err)
 	}
-	req.SetBasicAuth(c.Username, c.Password)
+	c.setAuth(req)
 	params := req.URL.Query()
 	params.Add("query", fmt.Sprintf("count by (job) ({%s!=\"\"})", labelName))
 	req.URL.RawQuery = params.Encode()

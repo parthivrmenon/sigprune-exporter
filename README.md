@@ -1,30 +1,41 @@
 # sigprune-exporter
 
-An exporter for Prometheus/Grafana Metric pruning.
+A Prometheus exporter for detecting *unused* metrics and labels in a Grafana datasources.
 
-## Quick Start
+A metric/label is deemed 'unused' if:
+- it does not appear in any Grafana Dashboard
+- it does not appear in any Grafana Alert Rule
+
+
+*Currently, the exporter only supports Prometheus datasources*
+
+
+## Installation
+
+**Prerequisites:** [Go](https://go.dev/dl/) 1.21+
 
 ```bash
-# Start local Grafana and Prometheus
-docker compose -f docker/docker-compose.yml up -d
-
-# Access Grafana at http://localhost:3000 (admin/admin)
-# Access Prometheus at http://localhost:9090 (no auth required)
+git clone https://github.com/parthivrmenon/sigprune-exporter.git
+cd sigprune-exporter
+go build -o sigprune-exporter .
 ```
 
-Run the following command to start the sigprune service:
+This produces a `sigprune-exporter` binary in the current directory.
+
 ```bash
-go run sigprune_exporter.go -user admin -password admin -datasource PBFA97CFB590B2093
+./sigprune-exporter --help
 ```
 
-## Shuting down
-```bash
-docker compose -f docker/docker-compose.yml down
-```
+## Configuration
 
-To fully reset (wipes Grafana storage volume, re-provisions dashboards from scratch):
-```bash
-docker compose -f docker/docker-compose.yml down -v
-```
-
-
+| Argument | Description | Default |
+|---|---|---|
+| `-grafanaURL` | Grafana URL | `http://localhost:3000` |
+| `-user` | Username for basic auth | |
+| `-password` | Password for basic auth | |
+| `-api-key` | Grafana API key for authentication | |
+| `-datasource` | Prometheus datasource UID to collect metrics from | *(required)* |
+| `-listen-address` | Address to listen on for HTTP requests | `:8080` |
+| `-tsdb-metrics-limit` | Number of top metrics to analyze from TSDB status | `10000` |
+| `-metrics-limit` | Limit the number of unused metrics to export | `50` |
+| `-labels-limit` | Limit the number of unused labels to export | `50` |

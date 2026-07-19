@@ -25,6 +25,7 @@ type Scanner struct {
 	grafanaURL         string
 	adminUser          string
 	adminPassword      string
+	apiKey             string
 	datasource         string
 	exportLimitMetrics int
 	exportLimitLabels  int
@@ -34,6 +35,7 @@ func NewScanner(
 	tsdbMetricsLimit int, grafanaURL string,
 	adminUser string,
 	adminPassword string,
+	apiKey string,
 	datasource string,
 	exportLimitMetrics int,
 	exportLimitLabels int,
@@ -43,15 +45,23 @@ func NewScanner(
 		grafanaURL:         grafanaURL,
 		adminUser:          adminUser,
 		adminPassword:      adminPassword,
+		apiKey:             apiKey,
 		datasource:         datasource,
 		exportLimitMetrics: exportLimitMetrics,
 		exportLimitLabels:  exportLimitLabels,
 	}
 }
 
+func (s *Scanner) newGrafanaClient() *grafana.Client {
+	if s.apiKey != "" {
+		return grafana.NewClientWithAPIKey(s.grafanaURL, s.apiKey)
+	}
+	return grafana.NewClient(s.grafanaURL, s.adminUser, s.adminPassword)
+}
+
 func (s *Scanner) getGrafanaDashboardMetricsAndLabels() MetricsAndLabels {
 	var result MetricsAndLabels
-	g := grafana.NewClient(s.grafanaURL, s.adminUser, s.adminPassword)
+	g := s.newGrafanaClient()
 	dashboards, err := g.GetDashboards()
 	if err != nil {
 		log.Fatal(err)
@@ -75,7 +85,7 @@ func (s *Scanner) getGrafanaDashboardMetricsAndLabels() MetricsAndLabels {
 
 func (s *Scanner) getGrafanaAlertRuleMetricsAndLabels() MetricsAndLabels {
 	var result MetricsAndLabels
-	g := grafana.NewClient(s.grafanaURL, s.adminUser, s.adminPassword)
+	g := s.newGrafanaClient()
 	alerts, err := g.GetAlertRules()
 	if err != nil {
 		log.Fatal(err)
@@ -97,12 +107,12 @@ func (s *Scanner) getGrafanaAlertRuleMetricsAndLabels() MetricsAndLabels {
 }
 
 func (s *Scanner) GetJobsForMetric(metric string) map[string]int64 {
-	g := grafana.NewClient(s.grafanaURL, s.adminUser, s.adminPassword)
+	g := s.newGrafanaClient()
 	return g.GetPrometheusJobsForMetric(s.datasource, metric)
 }
 
 func (s *Scanner) GetJobsForLabel(label string) map[string]int64 {
-	g := grafana.NewClient(s.grafanaURL, s.adminUser, s.adminPassword)
+	g := s.newGrafanaClient()
 	return g.GetPrometheusJobsForLabel(s.datasource, label)
 }
 
@@ -117,7 +127,7 @@ type UnusedMetricsAndLabels struct {
 }
 
 func (s *Scanner) GetUnusedMetricsAndLabels() UnusedMetricsAndLabels {
-	g := grafana.NewClient(s.grafanaURL, s.adminUser, s.adminPassword)
+	g := s.newGrafanaClient()
 	tsdbStatus := g.GetTSDBStatus(s.datasource, s.tsdbMetricsLimit)
 
 	topTSDBLabels := tsdbStatus.TSDBData.LabelCounts
@@ -182,7 +192,7 @@ func (s *Scanner) GetUnusedMetricsAndLabels() UnusedMetricsAndLabels {
 }
 
 func (s *Scanner) TestConnection() {
-	g := grafana.NewClient(s.grafanaURL, s.adminUser, s.adminPassword)
+	g := s.newGrafanaClient()
 	if err := g.TestConnection(); err != nil {
 		log.Fatal("Failed to connect to Grafana:", err)
 	}

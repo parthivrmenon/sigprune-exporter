@@ -50,10 +50,10 @@ type Datasource struct {
 
 func (c *Client) GetDashboards() ([]Dashboard, error) {
 	req, err := http.NewRequest("GET", c.URL+"/api/search?type=dash-db", nil)
-	req.SetBasicAuth(c.Username, c.Password)
 	if err != nil {
 		return nil, err
 	}
+	c.setAuth(req)
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -71,10 +71,10 @@ func (c *Client) GetDashboards() ([]Dashboard, error) {
 
 func (c *Client) GetDashboardByUID(uid string) (*DashboardResponse, error) {
 	req, err := http.NewRequest("GET", c.URL+"/api/dashboards/uid/"+uid, nil)
-	req.SetBasicAuth(c.Username, c.Password)
 	if err != nil {
 		return nil, err
 	}
+	c.setAuth(req)
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -109,10 +109,10 @@ func GetDashboardPanelExprs(d DashboardResponse) []string {
 
 func (c *Client) GetDatasources() ([]Datasource, error) {
 	req, err := http.NewRequest("GET", c.URL+"/api/datasources", nil)
-	req.SetBasicAuth(c.Username, c.Password)
 	if err != nil {
 		return nil, err
 	}
+	c.setAuth(req)
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err

@@ -40,10 +40,10 @@ type AlertQueryModel struct {
 
 func (c *Client) GetAlertRules() ([]AlertRule, error) {
 	req, err := http.NewRequest("GET", c.URL+"/api/v1/provisioning/alert-rules", nil)
-	req.SetBasicAuth(c.Username, c.Password)
 	if err != nil {
 		return nil, err
 	}
+	c.setAuth(req)
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -60,10 +60,10 @@ func (c *Client) GetAlertRules() ([]AlertRule, error) {
 
 func (c *Client) GetAlertRuleByUID(uid string) (*AlertRuleResponse, error) {
 	req, err := http.NewRequest("GET", c.URL+"/api/v1/provisioning/alert-rules/"+uid, nil)
-	req.SetBasicAuth(c.Username, c.Password)
 	if err != nil {
 		return nil, err
 	}
+	c.setAuth(req)
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
