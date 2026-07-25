@@ -9,3 +9,8 @@ scrape_configs:
     static_configs:
       # Scrape the in-compose node_exporter container so the stack is self-contained
       - targets: ["node_exporter:9100"]
+  - job_name: "sigprune"
+    honor_labels: true
+    static_configs:
+      # Exporter runs on the host machine; host.docker.internal resolves on macOS/Windows Docker Desktop
+      - targets: ["host.docker.internal:8080"]

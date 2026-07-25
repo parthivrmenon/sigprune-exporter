@@ -28,30 +28,30 @@ type LabelCount struct {
 	Value int64  `json:"value"`
 }
 
-func (c *Client) GetTSDBStatus(datasourceUID string, limit int) TSDBStatus {
+func (c *Client) GetTSDBStatus(datasourceUID string, limit int) (TSDBStatus, error) {
 	tsdbURI := fmt.Sprintf("/api/datasources/proxy/uid/%s/api/v1/status/tsdb?limit=%d", datasourceUID, limit)
 	req, err := http.NewRequest("GET", c.URL+tsdbURI, nil)
 	if err != nil {
-		log.Fatal(err)
+		return TSDBStatus{}, err
 	}
 	c.setAuth(req)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		return TSDBStatus{}, err
 	}
 	defer resp.Body.Close()
 	result, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		return TSDBStatus{}, err
 	}
 
 	var tsdbStatus TSDBStatus
 	if err := json.Unmarshal(result, &tsdbStatus); err != nil {
-		log.Fatal(err)
+		return TSDBStatus{}, err
 	}
 
-	return tsdbStatus
+	return tsdbStatus, nil
 
 }
 

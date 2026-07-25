@@ -59,18 +59,18 @@ func (s *Scanner) newGrafanaClient() *grafana.Client {
 	return grafana.NewClient(s.grafanaURL, s.adminUser, s.adminPassword)
 }
 
-func (s *Scanner) getGrafanaDashboardMetricsAndLabels() MetricsAndLabels {
+func (s *Scanner) getGrafanaDashboardMetricsAndLabels() (MetricsAndLabels, error) {
 	var result MetricsAndLabels
 	g := s.newGrafanaClient()
 	dashboards, err := g.GetDashboards()
 	if err != nil {
-		log.Fatal(err)
+		return result, err
 	}
 
 	for _, dashboard := range dashboards {
 		dashboardResponse, err := g.GetDashboardByUID(dashboard.UID)
 		if err != nil {
-			log.Fatal(err)
+			return result, err
 		}
 		panelExprs := grafana.GetDashboardPanelExprs(*dashboardResponse)
 		for _, expr := range panelExprs {
@@ -80,20 +80,20 @@ func (s *Scanner) getGrafanaDashboardMetricsAndLabels() MetricsAndLabels {
 			result.Metrics = append(result.Metrics, metricNames...)
 		}
 	}
-	return result
+	return result, nil
 }
 
-func (s *Scanner) getGrafanaAlertRuleMetricsAndLabels() MetricsAndLabels {
+func (s *Scanner) getGrafanaAlertRuleMetricsAndLabels() (MetricsAndLabels, error) {
 	var result MetricsAndLabels
 	g := s.newGrafanaClient()
 	alerts, err := g.GetAlertRules()
 	if err != nil {
-		log.Fatal(err)
+		return result, err
 	}
 	for _, alert := range alerts {
 		alertRule, err := g.GetAlertRuleByUID(alert.UID)
 		if err != nil {
-			log.Fatal(err)
+			return result, err
 		}
 		alertExprs := grafana.GetAlertRuleExprs(*alertRule)
 		for _, expr := range alertExprs {
@@ -103,7 +103,7 @@ func (s *Scanner) getGrafanaAlertRuleMetricsAndLabels() MetricsAndLabels {
 			result.Metrics = append(result.Metrics, metricNames...)
 		}
 	}
-	return result
+	return result, nil
 }
 
 func (s *Scanner) GetJobsForMetric(metric string) map[string]int64 {
@@ -126,9 +126,12 @@ type UnusedMetricsAndLabels struct {
 	UnusedLabels  []string
 }
 
-func (s *Scanner) GetUnusedMetricsAndLabels() UnusedMetricsAndLabels {
+func (s *Scanner) GetUnusedMetricsAndLabels() (UnusedMetricsAndLabels, error) {
 	g := s.newGrafanaClient()
-	tsdbStatus := g.GetTSDBStatus(s.datasource, s.tsdbMetricsLimit)
+	tsdbStatus, err := g.GetTSDBStatus(s.datasource, s.tsdbMetricsLimit)
+	if err != nil {
+		return UnusedMetricsAndLabels{}, err
+	}
 
 	topTSDBLabels := tsdbStatus.TSDBData.LabelCounts
 	log.Printf("Got %d labels from TSDB", len(topTSDBLabels))
@@ -145,10 +148,16 @@ func (s *Scanner) GetUnusedMetricsAndLabels() UnusedMetricsAndLabels {
 		filteredLabels = append(filteredLabels, label)
 	}
 
-	dashboardData := s.getGrafanaDashboardMetricsAndLabels()
+	dashboardData, err := s.getGrafanaDashboardMetricsAndLabels()
+	if err != nil {
+		return UnusedMetricsAndLabels{}, err
+	}
 	log.Printf("Got %d used labels from dashboards", len(dashboardData.Labels))
 
-	alertData := s.getGrafanaAlertRuleMetricsAndLabels()
+	alertData, err := s.getGrafanaAlertRuleMetricsAndLabels()
+	if err != nil {
+		return UnusedMetricsAndLabels{}, err
+	}
 	log.Printf("Got %d used labels from alert rules", len(alertData.Labels))
 
 	usedLabels := append(dashboardData.Labels, alertData.Labels...)
@@ -187,7 +196,7 @@ func (s *Scanner) GetUnusedMetricsAndLabels() UnusedMetricsAndLabels {
 	log.Printf("Returning %d unused metrics", len(unusedMetricsAndLabels.UnusedMetrics))
 	log.Printf("Returning %d unused labels", len(unusedMetricsAndLabels.UnusedLabels))
 
-	return unusedMetricsAndLabels
+	return unusedMetricsAndLabels, nil
 
 }
 

@@ -22,6 +22,11 @@ func TestMain(m *testing.M) {
 
 	// Create single mock server with all endpoints
 	mockGrafanaServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user, password, ok := r.BasicAuth()
+		if !ok || user != "notarealuser" || password != "notarealpassword" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
 		switch r.URL.Path {
 		case "/api/search":
 			if r.URL.Query().Get("type") == "dash-db" {
@@ -64,7 +69,10 @@ func TestMain(m *testing.M) {
 
 func TestGetUnusedMetricsAndLabelsWithLimit(t *testing.T) {
 	s := NewScanner(5, mockGrafanaServer.URL, "notarealuser", "notarealpassword", "", "notarealdatasource", 1, 1)
-	result := s.GetUnusedMetricsAndLabels()
+	result, err := s.GetUnusedMetricsAndLabels()
+	if err != nil {
+		t.Fatalf("Did not expect err %v", err)
+	}
 
 	if len(result.UnusedMetrics) != 1 {
 		t.Fatalf("expected 1 metric, got %d: %v", len(result.UnusedMetrics), result.UnusedMetrics)
@@ -76,7 +84,10 @@ func TestGetUnusedMetricsAndLabelsWithLimit(t *testing.T) {
 
 func TestGetUnusedMetricsAndLabels(t *testing.T) {
 	s := NewScanner(5, mockGrafanaServer.URL, "notarealuser", "notarealpassword", "", "notarealdatasource", 5, 5)
-	result := s.GetUnusedMetricsAndLabels()
+	result, err := s.GetUnusedMetricsAndLabels()
+	if err != nil {
+		t.Fatalf("Did not expect err %v", err)
+	}
 
 	expectedUnusedMetrics := []string{
 		"prometheus_http_requests_total",
@@ -123,5 +134,13 @@ func TestGetUnusedMetricsAndLabels(t *testing.T) {
 		if !found {
 			t.Fatalf("Expected label %s not found in %v", expected, result.UnusedLabels)
 		}
+	}
+}
+
+func TestGetUnusedMetricsAndLabelsUnauthorized(t *testing.T) {
+	s := NewScanner(5, mockGrafanaServer.URL, "wronguser", "wrongpassword", "", "notarealdatasource", 5, 5)
+	_, err := s.GetUnusedMetricsAndLabels()
+	if err == nil {
+		t.Fatal("expected error for unauthorized request, got nil")
 	}
 }

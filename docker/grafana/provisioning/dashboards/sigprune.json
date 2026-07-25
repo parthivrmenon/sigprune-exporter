@@ -1,0 +1,461 @@
+{
+  "__requires": [
+    {
+      "type": "panel",
+      "id": "barchart",
+      "name": "Bar chart",
+      "version": ""
+    },
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "11.6.1"
+    },
+    {
+      "type": "datasource",
+      "id": "prometheus",
+      "name": "Prometheus",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "stat",
+      "name": "Stat",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "table",
+      "name": "Table",
+      "version": ""
+    }
+  ],
+  "annotations": {
+    "list": []
+  },
+  "description": "Unused Prometheus metrics and labels discovered by sigprune-exporter",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [],
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "title": "Overview",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${ds_prometheus}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [
+            {
+              "options": {
+                "0": { "color": "red", "index": 0, "text": "Down" },
+                "1": { "color": "green", "index": 1, "text": "Up" }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
+      "id": 2,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${ds_prometheus}" },
+          "expr": "sigprune_up",
+          "instant": true,
+          "legendFormat": "Status",
+          "refId": "A"
+        }
+      ],
+      "title": "Scrape Status",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${ds_prometheus}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "blue" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "blue", "value": null }]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${ds_prometheus}" },
+          "expr": "count(group by (metric) (sigprune_unused_metric_cardinality))",
+          "instant": true,
+          "legendFormat": "Unused Metrics",
+          "refId": "A"
+        }
+      ],
+      "title": "Unused Metrics Count",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${ds_prometheus}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "orange" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "orange", "value": null }]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${ds_prometheus}" },
+          "expr": "count(group by (label) (sigprune_unused_label_cardinality))",
+          "instant": true,
+          "legendFormat": "Unused Labels",
+          "refId": "A"
+        }
+      ],
+      "title": "Unused Labels Count",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "id": 5,
+      "title": "Unused Metrics",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${ds_prometheus}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "custom": {
+            "align": "auto",
+            "cellOptions": { "type": "auto" },
+            "inspect": false
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Series Count" },
+            "properties": [
+              { "id": "custom.width", "value": 150 },
+              {
+                "id": "custom.cellOptions",
+                "value": { "mode": "gradient", "type": "gauge" }
+              },
+              { "id": "color", "value": { "mode": "continuous-BlYlRd" } }
+            ]
+          }
+        ]
+      },
+      "gridPos": { "h": 12, "w": 12, "x": 0, "y": 6 },
+      "id": 6,
+      "options": {
+        "cellHeight": "sm",
+        "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false },
+        "showHeader": true,
+        "sortBy": [{ "desc": true, "displayName": "Series Count" }]
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${ds_prometheus}" },
+          "expr": "sort_desc(sum by (metric, job) (sigprune_unused_metric_cardinality{job=~\"$job\"}))",
+          "format": "table",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Unused Metrics by Series Count",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true },
+            "indexByName": { "job": 0, "metric": 1, "Value": 2 },
+            "renameByName": { "Value": "Series Count", "job": "Job", "metric": "Metric" }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${ds_prometheus}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "continuous-BlYlRd" },
+          "custom": {
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "lineWidth": 1
+          },
+          "min": 0,
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 12, "w": 12, "x": 12, "y": 6 },
+      "id": 7,
+      "options": {
+        "barRadius": 0.05,
+        "barWidth": 0.7,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": false },
+        "orientation": "horizontal",
+        "stacking": "none",
+        "tooltip": { "mode": "single", "sort": "none" },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${ds_prometheus}" },
+          "expr": "topk($topk_limit, sum by (metric) (sigprune_unused_metric_cardinality{job=~\"$job\"}))",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "{{metric}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Top $topk_limit Unused Metrics",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true },
+            "renameByName": { "Value": "Series Count", "metric": "Metric" }
+          }
+        }
+      ],
+      "type": "barchart"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 18 },
+      "id": 8,
+      "title": "Unused Labels",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${ds_prometheus}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "custom": {
+            "align": "auto",
+            "cellOptions": { "type": "auto" },
+            "inspect": false
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Series Count" },
+            "properties": [
+              { "id": "custom.width", "value": 150 },
+              {
+                "id": "custom.cellOptions",
+                "value": { "mode": "gradient", "type": "gauge" }
+              },
+              { "id": "color", "value": { "mode": "continuous-BlYlRd" } }
+            ]
+          }
+        ]
+      },
+      "gridPos": { "h": 12, "w": 12, "x": 0, "y": 19 },
+      "id": 9,
+      "options": {
+        "cellHeight": "sm",
+        "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false },
+        "showHeader": true,
+        "sortBy": [{ "desc": true, "displayName": "Series Count" }]
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${ds_prometheus}" },
+          "expr": "sort_desc(sum by (label, job) (sigprune_unused_label_cardinality{job=~\"$job\"}))",
+          "format": "table",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Unused Labels by Series Count",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true },
+            "indexByName": { "job": 0, "label": 1, "Value": 2 },
+            "renameByName": { "Value": "Series Count", "job": "Job", "label": "Label" }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${ds_prometheus}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "continuous-BlYlRd" },
+          "custom": {
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "lineWidth": 1
+          },
+          "min": 0,
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 12, "w": 12, "x": 12, "y": 19 },
+      "id": 10,
+      "options": {
+        "barRadius": 0.05,
+        "barWidth": 0.7,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": false },
+        "orientation": "horizontal",
+        "stacking": "none",
+        "tooltip": { "mode": "single", "sort": "none" },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${ds_prometheus}" },
+          "expr": "topk($topk_limit, sum by (label) (sigprune_unused_label_cardinality{job=~\"$job\"}))",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "{{label}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Top $topk_limit Unused Labels",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true },
+            "renameByName": { "Value": "Series Count", "label": "Label" }
+          }
+        }
+      ],
+      "type": "barchart"
+    }
+  ],
+  "refresh": "1m",
+  "schemaVersion": 38,
+  "tags": ["sigprune", "prometheus", "observability"],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "includeAll": false,
+        "label": "Datasource",
+        "name": "ds_prometheus",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "regex": "",
+        "type": "datasource"
+      },
+      {
+        "current": {},
+        "datasource": { "type": "prometheus", "uid": "${ds_prometheus}" },
+        "definition": "label_values(sigprune_unused_metric_cardinality, job)",
+        "hide": 0,
+        "includeAll": true,
+        "multi": false,
+        "name": "job",
+        "options": [],
+        "query": {
+          "query": "label_values(sigprune_unused_metric_cardinality, job)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": { "selected": true, "text": "10", "value": "10" },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Top K",
+        "name": "topk_limit",
+        "options": [
+          { "selected": false, "text": "5", "value": "5" },
+          { "selected": true, "text": "10", "value": "10" },
+          { "selected": false, "text": "20", "value": "20" },
+          { "selected": false, "text": "50", "value": "50" }
+        ],
+        "query": "5,10,20,50",
+        "type": "custom"
+      }
+    ]
+  },
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Unused Metrics And Labels (Prometheus)",
+  "uid": "sigprune-unused-metrics",
+  "version": 1
+}

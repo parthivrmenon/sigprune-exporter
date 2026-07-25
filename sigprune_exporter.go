@@ -14,8 +14,16 @@ import (
 // Metric prefix
 const namespace = "sigprune"
 
+// Build Info
+var (
+	buildVersion  = "dev"
+	buildRevision = "unknown"
+)
+
 type Exporter struct {
 	scanner                             *scanner.Scanner
+	sigpruneBuildInfoDesc               *prometheus.Desc
+	sigpruneUpDesc                      *prometheus.Desc
 	sigpruneUnusedMetricCardinalityDesc *prometheus.Desc
 	sigpruneUnusedLabelCardinalityDesc  *prometheus.Desc
 }
@@ -31,6 +39,18 @@ func NewExporter(tsdbMetricsLimit int, grafanaURL string, adminUser string, admi
 			datasource,
 			exportLimitMetrics,
 			exportLimitLabels,
+		),
+		sigpruneBuildInfoDesc: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "", "build_info"),
+			"Build information",
+			[]string{"version", "revision"},
+			nil,
+		),
+		sigpruneUpDesc: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "", "up"),
+			"Was the last scrape successful",
+			nil,
+			nil,
 		),
 		sigpruneUnusedMetricCardinalityDesc: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "", "unused_metric_cardinality"),
@@ -48,13 +68,36 @@ func NewExporter(tsdbMetricsLimit int, grafanaURL string, adminUser string, admi
 }
 
 func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
+	ch <- e.sigpruneBuildInfoDesc
+	ch <- e.sigpruneUpDesc
 	ch <- e.sigpruneUnusedMetricCardinalityDesc
 	ch <- e.sigpruneUnusedLabelCardinalityDesc
 
 }
 
 func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
-	unusedMetricsAndLabels := e.scanner.GetUnusedMetricsAndLabels()
+	ch <- prometheus.MustNewConstMetric(
+		e.sigpruneBuildInfoDesc,
+		prometheus.GaugeValue,
+		1,
+		buildVersion,
+		buildRevision,
+	)
+
+	unusedMetricsAndLabels, err := e.scanner.GetUnusedMetricsAndLabels()
+	if err != nil {
+		ch <- prometheus.MustNewConstMetric(
+			e.sigpruneUpDesc,
+			prometheus.GaugeValue,
+			float64(0),
+		)
+		return
+	}
+	ch <- prometheus.MustNewConstMetric(
+		e.sigpruneUpDesc,
+		prometheus.GaugeValue,
+		float64(1),
+	)
 
 	for _, metric := range unusedMetricsAndLabels.UnusedMetrics {
 		jobs := e.scanner.GetJobsForMetric(metric)
