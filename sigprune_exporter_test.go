@@ -1,11 +1,57 @@
 package main
 
 import (
+	"os"
 	"reflect"
 	"testing"
 
+	sigprunetestutil "sigprune/internal/testutil"
 	"sigprune/pkg/utils"
+
+	"github.com/prometheus/client_golang/prometheus/testutil"
 )
+
+func TestCollectSuccess(t *testing.T) {
+	srv := sigprunetestutil.NewMockGrafanaServer()
+	defer srv.Close()
+
+	exporter := NewExporter(5, srv.URL, sigprunetestutil.MockUser, sigprunetestutil.MockPassword, "", sigprunetestutil.MockDatasource, 1, 1)
+
+	expected, err := os.Open("testdata/collect_success.txt")
+	if err != nil {
+		t.Fatalf("failed to open fixture: %v", err)
+	}
+	defer expected.Close()
+
+	if err := testutil.CollectAndCompare(exporter, expected,
+		"sigprune_build_info",
+		"sigprune_up",
+		"sigprune_unused_label_cardinality",
+		"sigprune_unused_metric_cardinality",
+	); err != nil {
+		t.Errorf("unexpected metric output:\n%v", err)
+	}
+}
+
+func TestCollectError(t *testing.T) {
+	srv := sigprunetestutil.NewMockGrafanaServer()
+	defer srv.Close()
+
+	exporter := NewExporter(5, srv.URL, "wronguser", "wrongpassword", "", sigprunetestutil.MockDatasource, 1, 1)
+
+	expected, err := os.Open("testdata/collect_error.txt")
+	if err != nil {
+		t.Fatalf("failed to open fixture: %v", err)
+	}
+	defer expected.Close()
+
+	if err := testutil.CollectAndCompare(exporter, expected,
+		"sigprune_build_info",
+		"sigprune_up",
+	); err != nil {
+		t.Errorf("unexpected metric output:\n%v", err)
+	}
+}
 
 func TestExtractMetricNames(t *testing.T) {
 	tests := []struct {

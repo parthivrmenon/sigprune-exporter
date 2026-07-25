@@ -1,0 +1,12 @@
+# HELP sigprune_build_info Build information
+# TYPE sigprune_build_info gauge
+sigprune_build_info{revision="unknown",version="dev"} 1
+# HELP sigprune_unused_label_cardinality Series count of a top-K unused label
+# TYPE sigprune_unused_label_cardinality gauge
+sigprune_unused_label_cardinality{job="test-job",label="handler"} 42
+# HELP sigprune_unused_metric_cardinality Series count of a top-K unused metric
+# TYPE sigprune_unused_metric_cardinality gauge
+sigprune_unused_metric_cardinality{job="test-job",metric="prometheus_http_requests_total"} 42
+# HELP sigprune_up Was the last scrape successful
+# TYPE sigprune_up gauge
+sigprune_up 1
