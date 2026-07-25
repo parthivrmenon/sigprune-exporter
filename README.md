@@ -1,10 +1,16 @@
 # sigprune-exporter
 
-**sigprune** - short for *"Signal Pruning"*, is a Prometheus exporter for detecting *"unused"* metrics and labels within a Grafana datasource.
+**sigprune** *(n.)* — *"Signal Pruner"*. A Prometheus exporter for detecting unused metrics and labels within a Grafana datasource.
 
 A metric/label is deemed 'unused' if:
 - it does not appear in any Grafana Dashboard
 - it does not appear in any Grafana Alert Rule
+
+The exporter allows you to visualize these unused metrics and labels in a Grafana dashboard like the one below:
+
+![Unused Metrics And Labels dashboard](docs/images/dashboard.png)
+
+A sample dashboard is included in `docker/grafana/provisioning/dashboards/sigprune.json` and is automatically provisioned when using the local Docker stack.
 
 
 *Note: Currently, the exporter only supports Prometheus datasources*
@@ -62,6 +68,7 @@ This produces a `sigprune-exporter` binary in the current directory. The `buildV
 Once running, metrics are available at `http://localhost:8080/metrics`.
 
 The Prometheus datasource UID can be found in Grafana under **Connections → Data sources → (your datasource) → Settings**.
+
 
 ## Metrics Reference
 
