@@ -46,7 +46,11 @@ This produces a `sigprune-exporter` binary in the current directory. The `buildV
 | `-listen-address` | Address to listen on for HTTP requests | `:8080` |
 | `-tsdb-metrics-limit` | Number of top metrics to analyze from TSDB status | `10000` |
 | `-metrics-limit` | Limit the number of unused metrics to export | `50` |
-| `-labels-limit` | Limit the number of unused labels to export | `50` |
+| `-labels-limit` | Limit the number of unused labels to export | `10` |
+
+> **Note:** 
+> - Increasing `labels-limit` increases scrape latency linearly — each additional label adds one sequential Prometheus API call to fetch per-job series counts.
+
 
 ## Usage
 
