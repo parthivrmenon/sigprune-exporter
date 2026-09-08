@@ -59,6 +59,11 @@ func (s *Scanner) newGrafanaClient() *grafana.Client {
 	return grafana.NewClient(s.grafanaURL, s.adminUser, s.adminPassword)
 }
 
+type MetricsAndLabels struct {
+	Metrics []string
+	Labels  []string
+}
+
 func (s *Scanner) getGrafanaDashboardMetricsAndLabels() (MetricsAndLabels, error) {
 	var result MetricsAndLabels
 	g := s.newGrafanaClient()
@@ -106,38 +111,38 @@ func (s *Scanner) getGrafanaAlertRuleMetricsAndLabels() (MetricsAndLabels, error
 	return result, nil
 }
 
-func (s *Scanner) GetJobsForMetric(metric string) map[string]int64 {
+type ScanResult struct {
+	UnusedMetrics      map[string]map[string]int64
+	UnusedLabels       map[string]map[string]int64
+	DashboardCount     int
+	AlertRuleCount     int
+	TotalTSDBMetrics   int
+	TotalTSDBLabels    int
+	TotalUsedMetrics   int
+	TotalUsedLabels    int
+	TotalUnusedMetrics int
+	TotalUnusedLabels  int
+	MetricsExportLimit int
+	LabelsExportLimit  int
+}
+
+func (s *Scanner) Scan() (ScanResult, error) {
+	var scanResult ScanResult
+
 	g := s.newGrafanaClient()
-	return g.GetPrometheusJobsForMetric(s.datasource, metric)
-}
 
-func (s *Scanner) GetJobsForLabel(label string) map[string]int64 {
-	g := s.newGrafanaClient()
-	return g.GetPrometheusJobsForLabel(s.datasource, label)
-}
-
-type MetricsAndLabels struct {
-	Metrics []string
-	Labels  []string
-}
-
-type UnusedMetricsAndLabels struct {
-	UnusedMetrics []string
-	UnusedLabels  []string
-}
-
-func (s *Scanner) GetUnusedMetricsAndLabels() (UnusedMetricsAndLabels, error) {
-	g := s.newGrafanaClient()
 	tsdbStatus, err := g.GetTSDBStatus(s.datasource, s.tsdbMetricsLimit)
 	if err != nil {
-		return UnusedMetricsAndLabels{}, err
+		return ScanResult{}, err
 	}
 
 	topTSDBLabels := tsdbStatus.TSDBData.LabelCounts
 	log.Printf("Got %d labels from TSDB", len(topTSDBLabels))
+	scanResult.TotalTSDBLabels = len(topTSDBLabels)
 
 	topTSDBMetrics := tsdbStatus.TSDBData.MetricCounts
 	log.Printf("Got %d metrics from TSDB", len(topTSDBMetrics))
+	scanResult.TotalTSDBMetrics = len(topTSDBMetrics)
 
 	var filteredLabels []grafana.LabelCount
 	for _, label := range topTSDBLabels {
@@ -148,55 +153,118 @@ func (s *Scanner) GetUnusedMetricsAndLabels() (UnusedMetricsAndLabels, error) {
 		filteredLabels = append(filteredLabels, label)
 	}
 
-	dashboardData, err := s.getGrafanaDashboardMetricsAndLabels()
+	// Scan Dashboards
+	dashboards, err := g.GetDashboards()
 	if err != nil {
-		return UnusedMetricsAndLabels{}, err
+		return ScanResult{}, err
 	}
-	log.Printf("Got %d used labels from dashboards", len(dashboardData.Labels))
+	scanResult.DashboardCount = len(dashboards)
 
-	alertData, err := s.getGrafanaAlertRuleMetricsAndLabels()
-	if err != nil {
-		return UnusedMetricsAndLabels{}, err
-	}
-	log.Printf("Got %d used labels from alert rules", len(alertData.Labels))
-
-	usedLabels := append(dashboardData.Labels, alertData.Labels...)
-
-	// create a used labels Set for lookup
-	usedSet := make(map[string]bool, len(usedLabels))
-	for _, m := range usedLabels {
-		usedSet[m] = true
-	}
-
-	var unusedMetricsAndLabels UnusedMetricsAndLabels
-
-	// Filter out used labels
-	for _, label := range filteredLabels {
-		if !usedSet[label.Name] && len(unusedMetricsAndLabels.UnusedLabels) < s.exportLimitLabels {
-			unusedMetricsAndLabels.UnusedLabels = append(unusedMetricsAndLabels.UnusedLabels, label.Name)
+	var metrics []string
+	var labels []string
+	for _, dashboard := range dashboards {
+		dashboardResponse, err := g.GetDashboardByUID(dashboard.UID)
+		if err != nil {
+			return ScanResult{}, err
+		}
+		panelExprs := grafana.GetDashboardPanelExprs(*dashboardResponse)
+		for _, expr := range panelExprs {
+			labelNames := utils.ExtractLabelNames(expr)
+			labels = append(labels, labelNames...)
+			metricNames := utils.ExtractMetricNames(expr)
+			metrics = append(metrics, metricNames...)
 		}
 	}
 
-	usedMetrics := append(dashboardData.Metrics, alertData.Metrics...)
-	log.Printf("Got %d used metrics from dashboards and alert rules", len(usedMetrics))
+	// Scan Alert Rules
+	alerts, err := g.GetAlertRules()
+	if err != nil {
+		return ScanResult{}, err
+	}
+
+	scanResult.AlertRuleCount = len(alerts)
+
+	for _, alert := range alerts {
+		alertRule, err := g.GetAlertRuleByUID(alert.UID)
+		if err != nil {
+			return ScanResult{}, err
+		}
+		alertExprs := grafana.GetAlertRuleExprs(*alertRule)
+		for _, expr := range alertExprs {
+			labelNames := utils.ExtractLabelNames(expr)
+			labels = append(labels, labelNames...)
+			metricNames := utils.ExtractMetricNames(expr)
+			metrics = append(metrics, metricNames...)
+		}
+	}
+
+	// create a used labels Set for lookup
+	usedSet := make(map[string]bool, len(labels))
+	for _, m := range labels {
+		usedSet[m] = true
+	}
+
+	scanResult.UnusedMetrics = make(map[string]map[string]int64)
+	scanResult.UnusedLabels = make(map[string]map[string]int64)
+
+	// Filter out used labels
+	var unusedLabels []string
+	for _, label := range filteredLabels {
+		if !usedSet[label.Name] && len(unusedLabels) < s.exportLimitLabels {
+			unusedLabels = append(unusedLabels, label.Name)
+		}
+	}
+
+	// usedMetrics := append(dashboardData.Metrics, alertData.Metrics...)
+	// log.Printf("Got %d used metrics from dashboards and alert rules", len(usedMetrics))
 
 	// create a used metrics Set for lookup
-	usedSet = make(map[string]bool, len(usedMetrics))
-	for _, m := range usedMetrics {
+	usedSet = make(map[string]bool, len(metrics))
+	for _, m := range metrics {
 		usedSet[m] = true
 	}
 
 	// Filter out used metrics
+	var unusedMetrics []string
 	for _, metric := range topTSDBMetrics {
-		if !usedSet[metric.Name] && len(unusedMetricsAndLabels.UnusedMetrics) < s.exportLimitMetrics {
-			unusedMetricsAndLabels.UnusedMetrics = append(unusedMetricsAndLabels.UnusedMetrics, metric.Name)
+		if !usedSet[metric.Name] && len(unusedMetrics) < s.exportLimitMetrics {
+			unusedMetrics = append(unusedMetrics, metric.Name)
 		}
 	}
 
-	log.Printf("Returning %d unused metrics", len(unusedMetricsAndLabels.UnusedMetrics))
-	log.Printf("Returning %d unused labels", len(unusedMetricsAndLabels.UnusedLabels))
+	metricJobMap := g.GetPrometheusJobsForMetrics(s.datasource, unusedMetrics)
 
-	return unusedMetricsAndLabels, nil
+	for metric, jobCounts := range metricJobMap {
+		for job, count := range jobCounts {
+			if scanResult.UnusedMetrics[metric] == nil {
+				scanResult.UnusedMetrics[metric] = make(map[string]int64)
+			}
+			scanResult.UnusedMetrics[metric][job] = count
+		}
+	}
+
+	for _, label := range unusedLabels {
+		jobs := g.GetPrometheusJobsForLabel(s.datasource, label)
+		for job, count := range jobs {
+			if scanResult.UnusedLabels[label] == nil {
+				scanResult.UnusedLabels[label] = make(map[string]int64)
+			}
+			scanResult.UnusedLabels[label][job] = count
+		}
+	}
+
+	// Populate statistics
+	scanResult.TotalUsedMetrics = len(metrics)
+	scanResult.TotalUsedLabels = len(labels)
+	scanResult.TotalUnusedMetrics = len(unusedMetrics)
+	scanResult.TotalUnusedLabels = len(unusedLabels)
+	scanResult.MetricsExportLimit = s.exportLimitMetrics
+	scanResult.LabelsExportLimit = s.exportLimitLabels
+
+	log.Printf("Returning %d unused metrics", len(unusedMetrics))
+	log.Printf("Returning %d unused labels", len(unusedLabels))
+
+	return scanResult, nil
 
 }
 

@@ -4,6 +4,7 @@ import (
 	"embed"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 )
 
 //go:embed testdata
@@ -15,8 +16,6 @@ const (
 	MockDatasource = "notarealdatasource"
 )
 
-var queryResponse = []byte(`{"status":"success","data":{"resultType":"vector","result":[{"metric":{"job":"test-job"},"value":[1234567890,"42"]}]}}`)
-
 func NewMockGrafanaServer() *httptest.Server {
 	dashboardsData, _ := testdataFS.ReadFile("testdata/dashboards.json")
 	dashboardDetailData, _ := testdataFS.ReadFile("testdata/dashboard_detail.json")
@@ -26,6 +25,8 @@ func NewMockGrafanaServer() *httptest.Server {
 	alertRuleDiskFillingData, _ := testdataFS.ReadFile("testdata/alert_rule_disk_filling.json")
 	alertRuleHighMemoryData, _ := testdataFS.ReadFile("testdata/alert_rule_high_memory.json")
 	tsdbStatusData, _ := testdataFS.ReadFile("testdata/tsdb_status.json")
+	queryResponseData, _ := testdataFS.ReadFile("testdata/query_response.json")
+	queryResponseLimitData, _ := testdataFS.ReadFile("testdata/query_response_limit.json")
 
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user, password, ok := r.BasicAuth()
@@ -54,7 +55,13 @@ func NewMockGrafanaServer() *httptest.Server {
 		case "/api/datasources/proxy/uid/" + MockDatasource + "/api/v1/status/tsdb":
 			w.Write(tsdbStatusData)
 		case "/api/datasources/proxy/uid/" + MockDatasource + "/api/v1/query":
-			w.Write(queryResponse)
+			query := r.URL.Query().Get("query")
+			// If query has only one metric (limit test), use limit fixture
+			if strings.Contains(query, "prometheus_http_requests_total") && !strings.Contains(query, "node_filesystem") {
+				w.Write(queryResponseLimitData)
+			} else {
+				w.Write(queryResponseData)
+			}
 		default:
 			w.WriteHeader(http.StatusNotFound)
 		}

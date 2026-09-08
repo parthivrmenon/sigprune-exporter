@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 type TSDBStatus struct {
@@ -64,6 +65,48 @@ type QueryResponse struct {
 	} `json:"data"`
 }
 
+func (c *Client) GetPrometheusJobsForMetrics(datasourceUID string, metrics []string) map[string]map[string]int64 {
+	queryURI := fmt.Sprintf("/api/datasources/proxy/uid/%s/api/v1/query", datasourceUID)
+	req, err := http.NewRequest("GET", c.URL+queryURI, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	c.setAuth(req)
+	params := req.URL.Query()
+	metricNames := strings.Join(metrics, "|")
+	params.Add("query", fmt.Sprintf("count by (job, __name__) ({__name__=~\"%s\"})", metricNames))
+	req.URL.RawQuery = params.Encode()
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+	result, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var queryResponse QueryResponse
+	if err := json.Unmarshal(result, &queryResponse); err != nil {
+		log.Fatal(err)
+	}
+	metricJobMap := make(map[string]map[string]int64)
+
+	for _, r := range queryResponse.Data.Result {
+		metric := r.Metric["__name__"]
+		job := r.Metric["job"]
+		countStr := r.Value[1].(string) // value[1] is the count as a string
+		count, _ := strconv.ParseInt(countStr, 10, 64)
+
+		if metricJobMap[metric] == nil {
+			metricJobMap[metric] = make(map[string]int64)
+		}
+		metricJobMap[metric][job] = count
+	}
+	return metricJobMap
+
+}
 func (c *Client) GetPrometheusJobsForMetric(datasourceUID string, metricName string) map[string]int64 {
 	queryURI := fmt.Sprintf("/api/datasources/proxy/uid/%s/api/v1/query", datasourceUID)
 	req, err := http.NewRequest("GET", c.URL+queryURI, nil)
@@ -74,7 +117,6 @@ func (c *Client) GetPrometheusJobsForMetric(datasourceUID string, metricName str
 	params := req.URL.Query()
 	params.Add("query", fmt.Sprintf("count by (job) (%s)", metricName))
 	req.URL.RawQuery = params.Encode()
-
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		log.Fatal(err)

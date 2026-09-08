@@ -26,6 +26,16 @@ type Exporter struct {
 	sigpruneUpDesc                      *prometheus.Desc
 	sigpruneUnusedMetricCardinalityDesc *prometheus.Desc
 	sigpruneUnusedLabelCardinalityDesc  *prometheus.Desc
+	sigpruneDashboardCountDesc          *prometheus.Desc
+	sigpruneAlertRuleCountDesc          *prometheus.Desc
+	sigpruneTotalTSDBMetricsDesc        *prometheus.Desc
+	sigpruneTotalTSDBLabelsDesc         *prometheus.Desc
+	sigpruneTotalUsedMetricsDesc        *prometheus.Desc
+	sigpruneTotalUsedLabelsDesc         *prometheus.Desc
+	sigpruneTotalUnusedMetricsDesc      *prometheus.Desc
+	sigpruneTotalUnusedLabelsDesc       *prometheus.Desc
+	sigpruneMetricsExportLimitDesc      *prometheus.Desc
+	sigpruneLabelsExportLimitDesc       *prometheus.Desc
 }
 
 func NewExporter(tsdbMetricsLimit int, grafanaURL string, adminUser string, adminPassword string, apiKey string, datasource string, exportLimitMetrics int, exportLimitLabels int) *Exporter {
@@ -64,6 +74,66 @@ func NewExporter(tsdbMetricsLimit int, grafanaURL string, adminUser string, admi
 			[]string{"job", "label"},
 			nil,
 		),
+		sigpruneDashboardCountDesc: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "", "dashboard_count"),
+			"Number of Grafana dashboards analyzed for metric/label references",
+			nil,
+			nil,
+		),
+		sigpruneAlertRuleCountDesc: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "", "alert_rule_count"),
+			"Number of Grafana alert rules analyzed for metric/label references",
+			nil,
+			nil,
+		),
+		sigpruneTotalTSDBMetricsDesc: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "", "total_tsdb_metrics"),
+			"Total number of metrics retrieved from TSDB status API (limited by tsdb-metrics-limit)",
+			nil,
+			nil,
+		),
+		sigpruneTotalTSDBLabelsDesc: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "", "total_tsdb_labels"),
+			"Total number of labels retrieved from TSDB status API (limited by tsdb-metrics-limit)",
+			nil,
+			nil,
+		),
+		sigpruneTotalUsedMetricsDesc: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "", "total_used_metrics"),
+			"Number of unique metrics referenced in dashboards and alert rules",
+			nil,
+			nil,
+		),
+		sigpruneTotalUsedLabelsDesc: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "", "total_used_labels"),
+			"Number of unique labels referenced in dashboards and alert rules",
+			nil,
+			nil,
+		),
+		sigpruneTotalUnusedMetricsDesc: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "", "total_unused_metrics"),
+			"Number of unused metrics identified in this scrape (capped by export limit)",
+			nil,
+			nil,
+		),
+		sigpruneTotalUnusedLabelsDesc: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "", "total_unused_labels"),
+			"Number of unused labels identified in this scrape (capped by export limit)",
+			nil,
+			nil,
+		),
+		sigpruneMetricsExportLimitDesc: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "", "metrics_export_limit"),
+			"Configured limit on number of unused metrics to export (metrics-limit flag)",
+			nil,
+			nil,
+		),
+		sigpruneLabelsExportLimitDesc: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "", "labels_export_limit"),
+			"Configured limit on number of unused labels to export (labels-limit flag)",
+			nil,
+			nil,
+		),
 	}
 }
 
@@ -72,6 +142,16 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	ch <- e.sigpruneUpDesc
 	ch <- e.sigpruneUnusedMetricCardinalityDesc
 	ch <- e.sigpruneUnusedLabelCardinalityDesc
+	ch <- e.sigpruneDashboardCountDesc
+	ch <- e.sigpruneAlertRuleCountDesc
+	ch <- e.sigpruneTotalTSDBMetricsDesc
+	ch <- e.sigpruneTotalTSDBLabelsDesc
+	ch <- e.sigpruneTotalUsedMetricsDesc
+	ch <- e.sigpruneTotalUsedLabelsDesc
+	ch <- e.sigpruneTotalUnusedMetricsDesc
+	ch <- e.sigpruneTotalUnusedLabelsDesc
+	ch <- e.sigpruneMetricsExportLimitDesc
+	ch <- e.sigpruneLabelsExportLimitDesc
 
 }
 
@@ -84,7 +164,7 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 		buildRevision,
 	)
 
-	unusedMetricsAndLabels, err := e.scanner.GetUnusedMetricsAndLabels()
+	unusedMetricsAndLabelsPerJob, err := e.scanner.Scan()
 	if err != nil {
 		ch <- prometheus.MustNewConstMetric(
 			e.sigpruneUpDesc,
@@ -99,29 +179,80 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 		float64(1),
 	)
 
-	for _, metric := range unusedMetricsAndLabels.UnusedMetrics {
-		jobs := e.scanner.GetJobsForMetric(metric)
-		for job, count := range jobs {
+	for metric, perJobCount := range unusedMetricsAndLabelsPerJob.UnusedMetrics {
+		for job, count := range perJobCount {
 			ch <- prometheus.MustNewConstMetric(
 				e.sigpruneUnusedMetricCardinalityDesc,
 				prometheus.GaugeValue,
 				float64(count),
 				job, metric,
 			)
+
 		}
 	}
 
-	for _, label := range unusedMetricsAndLabels.UnusedLabels {
-		jobs := e.scanner.GetJobsForLabel(label)
-		for job, count := range jobs {
+	for label, perJobCount := range unusedMetricsAndLabelsPerJob.UnusedLabels {
+		for job, count := range perJobCount {
 			ch <- prometheus.MustNewConstMetric(
 				e.sigpruneUnusedLabelCardinalityDesc,
 				prometheus.GaugeValue,
 				float64(count),
 				job, label,
 			)
+
 		}
 	}
+
+	ch <- prometheus.MustNewConstMetric(
+		e.sigpruneDashboardCountDesc,
+		prometheus.GaugeValue,
+		float64(unusedMetricsAndLabelsPerJob.DashboardCount),
+	)
+	ch <- prometheus.MustNewConstMetric(
+		e.sigpruneAlertRuleCountDesc,
+		prometheus.GaugeValue,
+		float64(unusedMetricsAndLabelsPerJob.AlertRuleCount),
+	)
+	ch <- prometheus.MustNewConstMetric(
+		e.sigpruneTotalTSDBMetricsDesc,
+		prometheus.GaugeValue,
+		float64(unusedMetricsAndLabelsPerJob.TotalTSDBMetrics),
+	)
+	ch <- prometheus.MustNewConstMetric(
+		e.sigpruneTotalTSDBLabelsDesc,
+		prometheus.GaugeValue,
+		float64(unusedMetricsAndLabelsPerJob.TotalTSDBLabels),
+	)
+	ch <- prometheus.MustNewConstMetric(
+		e.sigpruneTotalUsedMetricsDesc,
+		prometheus.GaugeValue,
+		float64(unusedMetricsAndLabelsPerJob.TotalUsedMetrics),
+	)
+	ch <- prometheus.MustNewConstMetric(
+		e.sigpruneTotalUsedLabelsDesc,
+		prometheus.GaugeValue,
+		float64(unusedMetricsAndLabelsPerJob.TotalUsedLabels),
+	)
+	ch <- prometheus.MustNewConstMetric(
+		e.sigpruneTotalUnusedMetricsDesc,
+		prometheus.GaugeValue,
+		float64(unusedMetricsAndLabelsPerJob.TotalUnusedMetrics),
+	)
+	ch <- prometheus.MustNewConstMetric(
+		e.sigpruneTotalUnusedLabelsDesc,
+		prometheus.GaugeValue,
+		float64(unusedMetricsAndLabelsPerJob.TotalUnusedLabels),
+	)
+	ch <- prometheus.MustNewConstMetric(
+		e.sigpruneMetricsExportLimitDesc,
+		prometheus.GaugeValue,
+		float64(unusedMetricsAndLabelsPerJob.MetricsExportLimit),
+	)
+	ch <- prometheus.MustNewConstMetric(
+		e.sigpruneLabelsExportLimitDesc,
+		prometheus.GaugeValue,
+		float64(unusedMetricsAndLabelsPerJob.LabelsExportLimit),
+	)
 
 }
 
@@ -134,7 +265,7 @@ func main() {
 		datasource         = flag.String("datasource", "", "Prometheus Datasource UID to collect metrics from")
 		tsdbMetricsLimit   = flag.Int("tsdb-metrics-limit", 10000, "Number of top metrics to analyze from TSDB status")
 		exportLimitMetrics = flag.Int("metrics-limit", 50, "Limit the number of metrics to export")
-		exportLimitLabels  = flag.Int("labels-limit", 50, "Limit the number of labels to export")
+		exportLimitLabels  = flag.Int("labels-limit", 10, "Limit the number of labels to export")
 		adminUser          = flag.String("user", "", "Username for authentication")
 		adminPassword      = flag.String("password", "", "Password for authentication")
 		apiKey             = flag.String("api-key", "", "Grafana API key for authentication")
