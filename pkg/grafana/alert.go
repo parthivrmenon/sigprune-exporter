@@ -6,12 +6,6 @@ import (
 )
 
 type AlertRule struct {
-	ID    int    `json:"id"`
-	UID   string `json:"uid"`
-	Title string `json:"title"`
-}
-
-type AlertRuleResponse struct {
 	ID    int              `json:"id"`
 	UID   string           `json:"uid"`
 	Title string           `json:"title"`
@@ -58,28 +52,7 @@ func (c *Client) GetAlertRules() ([]AlertRule, error) {
 	return alertRules, nil
 }
 
-func (c *Client) GetAlertRuleByUID(uid string) (*AlertRuleResponse, error) {
-	req, err := http.NewRequest("GET", c.URL+"/api/v1/provisioning/alert-rules/"+uid, nil)
-	if err != nil {
-		return nil, err
-	}
-	c.setAuth(req)
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	var alertRuleResponse AlertRuleResponse
-	err = json.NewDecoder(resp.Body).Decode(&alertRuleResponse)
-	if err != nil {
-		return nil, err
-	}
-
-	return &alertRuleResponse, nil
-}
-
-func GetAlertRuleExprs(a AlertRuleResponse) []string {
+func GetAlertRuleExprs(a AlertRule) []string {
 	var allExprs []string
 	for _, queryData := range a.Data {
 		if queryData.Model.Expr != "" {

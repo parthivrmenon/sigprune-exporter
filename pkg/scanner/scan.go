@@ -59,58 +59,6 @@ func (s *Scanner) newGrafanaClient() *grafana.Client {
 	return grafana.NewClient(s.grafanaURL, s.adminUser, s.adminPassword)
 }
 
-type MetricsAndLabels struct {
-	Metrics []string
-	Labels  []string
-}
-
-func (s *Scanner) getGrafanaDashboardMetricsAndLabels() (MetricsAndLabels, error) {
-	var result MetricsAndLabels
-	g := s.newGrafanaClient()
-	dashboards, err := g.GetDashboards()
-	if err != nil {
-		return result, err
-	}
-
-	for _, dashboard := range dashboards {
-		dashboardResponse, err := g.GetDashboardByUID(dashboard.UID)
-		if err != nil {
-			return result, err
-		}
-		panelExprs := grafana.GetDashboardPanelExprs(*dashboardResponse)
-		for _, expr := range panelExprs {
-			labelNames := utils.ExtractLabelNames(expr)
-			result.Labels = append(result.Labels, labelNames...)
-			metricNames := utils.ExtractMetricNames(expr)
-			result.Metrics = append(result.Metrics, metricNames...)
-		}
-	}
-	return result, nil
-}
-
-func (s *Scanner) getGrafanaAlertRuleMetricsAndLabels() (MetricsAndLabels, error) {
-	var result MetricsAndLabels
-	g := s.newGrafanaClient()
-	alerts, err := g.GetAlertRules()
-	if err != nil {
-		return result, err
-	}
-	for _, alert := range alerts {
-		alertRule, err := g.GetAlertRuleByUID(alert.UID)
-		if err != nil {
-			return result, err
-		}
-		alertExprs := grafana.GetAlertRuleExprs(*alertRule)
-		for _, expr := range alertExprs {
-			labelNames := utils.ExtractLabelNames(expr)
-			result.Labels = append(result.Labels, labelNames...)
-			metricNames := utils.ExtractMetricNames(expr)
-			result.Metrics = append(result.Metrics, metricNames...)
-		}
-	}
-	return result, nil
-}
-
 type ScanResult struct {
 	UnusedMetrics      map[string]map[string]int64
 	UnusedLabels       map[string]map[string]int64
@@ -185,11 +133,7 @@ func (s *Scanner) Scan() (ScanResult, error) {
 	scanResult.AlertRuleCount = len(alerts)
 
 	for _, alert := range alerts {
-		alertRule, err := g.GetAlertRuleByUID(alert.UID)
-		if err != nil {
-			return ScanResult{}, err
-		}
-		alertExprs := grafana.GetAlertRuleExprs(*alertRule)
+		alertExprs := grafana.GetAlertRuleExprs(alert)
 		for _, expr := range alertExprs {
 			labelNames := utils.ExtractLabelNames(expr)
 			labels = append(labels, labelNames...)

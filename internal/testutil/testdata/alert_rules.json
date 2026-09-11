@@ -2,21 +2,292 @@
   {
     "id": 1,
     "uid": "node_exporter_host_down",
-    "title": "Host Down"
+    "orgID": 1,
+    "folderUID": "dfslcyi4s543ka",
+    "ruleGroup": "NodeExporterAlerts",
+    "title": "Host Down",
+    "condition": "B",
+    "data": [
+      {
+        "refId": "A",
+        "queryType": "",
+        "relativeTimeRange": {
+          "from": 300,
+          "to": 0
+        },
+        "datasourceUid": "",
+        "model": {
+          "expr": "up{job=\"node\"} == 0",
+          "hide": false,
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "A"
+        }
+      },
+      {
+        "refId": "B",
+        "queryType": "",
+        "relativeTimeRange": {
+          "from": 300,
+          "to": 0
+        },
+        "datasourceUid": "",
+        "model": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  0
+                ],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": [
+                  "A"
+                ]
+              },
+              "reducer": {
+                "params": [],
+                "type": "last"
+              },
+              "type": "query"
+            }
+          ],
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "B",
+          "type": "classic_conditions"
+        }
+      }
+    ],
+    "updated": "2026-09-11T02:29:07Z",
+    "noDataState": "NoData",
+    "execErrState": "Alerting",
+    "for": "5m",
+    "keep_firing_for": "0s",
+    "annotations": {
+      "description": "Node exporter has been unreachable for more than 5 minutes.",
+      "summary": "Instance {{ $labels.instance }} is down"
+    },
+    "labels": {
+      "severity": "critical"
+    },
+    "provenance": "file",
+    "isPaused": false,
+    "notification_settings": null,
+    "record": null
   },
   {
     "id": 2,
     "uid": "node_exporter_high_cpu",
-    "title": "High CPU Usage"
+    "orgID": 1,
+    "folderUID": "dfslcyi4s543ka",
+    "ruleGroup": "NodeExporterAlerts",
+    "title": "High CPU Usage",
+    "condition": "C",
+    "data": [
+      {
+        "refId": "A",
+        "queryType": "",
+        "relativeTimeRange": {
+          "from": 300,
+          "to": 0
+        },
+        "datasourceUid": "",
+        "model": {
+          "expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "A"
+        }
+      },
+      {
+        "refId": "C",
+        "queryType": "",
+        "relativeTimeRange": {
+          "from": 300,
+          "to": 0
+        },
+        "datasourceUid": "",
+        "model": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  85
+                ],
+                "type": "gt"
+              },
+              "unloadEvaluator": {
+                "params": [
+                  80
+                ],
+                "type": "lt"
+              }
+            }
+          ],
+          "expression": "A",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "C",
+          "type": "threshold"
+        }
+      }
+    ],
+    "updated": "2026-09-11T02:29:07Z",
+    "noDataState": "NoData",
+    "execErrState": "Alerting",
+    "for": "5m",
+    "keep_firing_for": "0s",
+    "annotations": {
+      "description": "CPU usage is currently at {{ $values.C.Value }}%.",
+      "summary": "High CPU utilization on {{ $labels.instance }}"
+    },
+    "labels": {
+      "severity": "warning"
+    },
+    "provenance": "file",
+    "isPaused": false,
+    "notification_settings": null,
+    "record": null
   },
   {
     "id": 3,
     "uid": "node_exporter_disk_filling",
-    "title": "Disk Space Running Low"
+    "orgID": 1,
+    "folderUID": "dfslcyi4s543ka",
+    "ruleGroup": "NodeExporterAlerts",
+    "title": "Disk Space Running Low",
+    "condition": "C",
+    "data": [
+      {
+        "refId": "A",
+        "queryType": "",
+        "relativeTimeRange": {
+          "from": 600,
+          "to": 0
+        },
+        "datasourceUid": "",
+        "model": {
+          "expr": "100 - ((node_filesystem_avail_bytes{mountpoint=\"/\"} * 100) / node_filesystem_size_bytes{mountpoint=\"/\"})",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "A"
+        }
+      },
+      {
+        "refId": "C",
+        "queryType": "",
+        "relativeTimeRange": {
+          "from": 600,
+          "to": 0
+        },
+        "datasourceUid": "",
+        "model": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  90
+                ],
+                "type": "gt"
+              }
+            }
+          ],
+          "expression": "A",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "C",
+          "type": "threshold"
+        }
+      }
+    ],
+    "updated": "2026-09-11T02:29:07Z",
+    "noDataState": "NoData",
+    "execErrState": "Alerting",
+    "for": "15m",
+    "keep_firing_for": "0s",
+    "annotations": {
+      "description": "Disk utilization has breached 90% (Current: {{ $values.C.Value }}%).",
+      "summary": "Root partition full on {{ $labels.instance }}"
+    },
+    "labels": {
+      "severity": "critical"
+    },
+    "provenance": "file",
+    "isPaused": false,
+    "notification_settings": null,
+    "record": null
   },
   {
     "id": 4,
     "uid": "node_exporter_high_memory",
-    "title": "High Memory Usage"
+    "orgID": 1,
+    "folderUID": "dfslcyi4s543ka",
+    "ruleGroup": "NodeExporterAlerts",
+    "title": "High Memory Usage",
+    "condition": "C",
+    "data": [
+      {
+        "refId": "A",
+        "queryType": "",
+        "relativeTimeRange": {
+          "from": 300,
+          "to": 0
+        },
+        "datasourceUid": "",
+        "model": {
+          "expr": "100 * (1 - ((node_memory_MemFree_bytes + node_memory_Buffers_bytes + node_memory_Cached_bytes) / node_memory_MemTotal_bytes))",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "A"
+        }
+      },
+      {
+        "refId": "C",
+        "queryType": "",
+        "relativeTimeRange": {
+          "from": 300,
+          "to": 0
+        },
+        "datasourceUid": "",
+        "model": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  85
+                ],
+                "type": "gt"
+              }
+            }
+          ],
+          "expression": "A",
+          "intervalMs": 1000,
+          "maxDataPoints": 43200,
+          "refId": "C",
+          "type": "threshold"
+        }
+      }
+    ],
+    "updated": "2026-09-11T02:29:07Z",
+    "noDataState": "NoData",
+    "execErrState": "Alerting",
+    "for": "5m",
+    "keep_firing_for": "0s",
+    "annotations": {
+      "description": "System memory utilization is high: {{ $values.C.Value }}%.",
+      "summary": "Memory saturation on {{ $labels.instance }}"
+    },
+    "labels": {
+      "severity": "warning"
+    },
+    "provenance": "file",
+    "isPaused": false,
+    "notification_settings": null,
+    "record": null
   }
 ]

@@ -20,10 +20,6 @@ func NewMockGrafanaServer() *httptest.Server {
 	dashboardsData, _ := testdataFS.ReadFile("testdata/dashboards.json")
 	dashboardDetailData, _ := testdataFS.ReadFile("testdata/dashboard_detail.json")
 	alertRulesData, _ := testdataFS.ReadFile("testdata/alert_rules.json")
-	alertRuleHostDownData, _ := testdataFS.ReadFile("testdata/alert_rule_host_down.json")
-	alertRuleHighCPUData, _ := testdataFS.ReadFile("testdata/alert_rule_high_cpu.json")
-	alertRuleDiskFillingData, _ := testdataFS.ReadFile("testdata/alert_rule_disk_filling.json")
-	alertRuleHighMemoryData, _ := testdataFS.ReadFile("testdata/alert_rule_high_memory.json")
 	tsdbStatusData, _ := testdataFS.ReadFile("testdata/tsdb_status.json")
 	queryResponseData, _ := testdataFS.ReadFile("testdata/query_response.json")
 	queryResponseLimitData, _ := testdataFS.ReadFile("testdata/query_response_limit.json")
@@ -44,14 +40,6 @@ func NewMockGrafanaServer() *httptest.Server {
 			w.Write(dashboardDetailData)
 		case "/api/v1/provisioning/alert-rules":
 			w.Write(alertRulesData)
-		case "/api/v1/provisioning/alert-rules/node_exporter_host_down":
-			w.Write(alertRuleHostDownData)
-		case "/api/v1/provisioning/alert-rules/node_exporter_high_cpu":
-			w.Write(alertRuleHighCPUData)
-		case "/api/v1/provisioning/alert-rules/node_exporter_disk_filling":
-			w.Write(alertRuleDiskFillingData)
-		case "/api/v1/provisioning/alert-rules/node_exporter_high_memory":
-			w.Write(alertRuleHighMemoryData)
 		case "/api/datasources/proxy/uid/" + MockDatasource + "/api/v1/status/tsdb":
 			w.Write(tsdbStatusData)
 		case "/api/datasources/proxy/uid/" + MockDatasource + "/api/v1/query":
