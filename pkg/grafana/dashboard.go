@@ -25,6 +25,9 @@ type DashboardPanel struct {
 	UID     string                 `json:"uid"`
 	Title   string                 `json:"title"`
 	Targets []DashboardPanelTarget `json:"targets"`
+	// Panels holds the children of a collapsed row. It is empty for expanded
+	// rows, whose children sit at the top level instead.
+	Panels []DashboardPanel `json:"panels"`
 }
 
 type DashboardResponse struct {
@@ -98,13 +101,19 @@ func (c *Client) GetDashboardByUID(uid string) (*DashboardResponse, error) {
 }
 
 func GetDashboardPanelExprs(d DashboardResponse) []string {
-	var allExprs []string
-	for _, panel := range d.Dashboard.Panels {
+	return collectPanelExprs(d.Dashboard.Panels, nil)
+}
+
+// collectPanelExprs appends the target exprs of every panel, including panels
+// nested inside collapsed rows.
+func collectPanelExprs(panels []DashboardPanel, exprs []string) []string {
+	for _, panel := range panels {
 		for _, target := range panel.Targets {
-			allExprs = append(allExprs, target.Expr)
+			exprs = append(exprs, target.Expr)
 		}
+		exprs = collectPanelExprs(panel.Panels, exprs)
 	}
-	return allExprs
+	return exprs
 }
 
 func (c *Client) GetDatasources() ([]Datasource, error) {
