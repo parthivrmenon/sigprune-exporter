@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -65,11 +64,15 @@ type QueryResponse struct {
 	} `json:"data"`
 }
 
-func (c *Client) GetPrometheusJobsForMetrics(datasourceUID string, metrics []string) map[string]map[string]int64 {
+func (c *Client) GetPrometheusJobsForMetrics(datasourceUID string, metrics []string) (map[string]map[string]int64, error) {
+	// An empty list would build {__name__=~""}, which Prometheus rejects with a 400.
+	if len(metrics) == 0 {
+		return map[string]map[string]int64{}, nil
+	}
 	queryURI := fmt.Sprintf("/api/datasources/proxy/uid/%s/api/v1/query", datasourceUID)
 	req, err := http.NewRequest("GET", c.URL+queryURI, nil)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	c.setAuth(req)
 	params := req.URL.Query()
@@ -79,17 +82,17 @@ func (c *Client) GetPrometheusJobsForMetrics(datasourceUID string, metrics []str
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	defer resp.Body.Close()
 	result, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	var queryResponse QueryResponse
 	if err := json.Unmarshal(result, &queryResponse); err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	metricJobMap := make(map[string]map[string]int64)
 
@@ -104,49 +107,15 @@ func (c *Client) GetPrometheusJobsForMetrics(datasourceUID string, metrics []str
 		}
 		metricJobMap[metric][job] = count
 	}
-	return metricJobMap
-
-}
-func (c *Client) GetPrometheusJobsForMetric(datasourceUID string, metricName string) map[string]int64 {
-	queryURI := fmt.Sprintf("/api/datasources/proxy/uid/%s/api/v1/query", datasourceUID)
-	req, err := http.NewRequest("GET", c.URL+queryURI, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	c.setAuth(req)
-	params := req.URL.Query()
-	params.Add("query", fmt.Sprintf("count by (job) (%s)", metricName))
-	req.URL.RawQuery = params.Encode()
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer resp.Body.Close()
-	result, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var queryResponse QueryResponse
-	if err := json.Unmarshal(result, &queryResponse); err != nil {
-		log.Fatal(err)
-	}
-	jobs := make(map[string]int64)
-	for _, r := range queryResponse.Data.Result {
-		job := r.Metric["job"]
-		countStr := r.Value[1].(string) // value[1] is the count as a string
-		count, _ := strconv.ParseInt(countStr, 10, 64)
-		jobs[job] = count
-	}
-	return jobs
+	return metricJobMap, nil
 
 }
 
-func (c *Client) GetPrometheusJobsForLabel(datasourceUID string, labelName string) map[string]int64 {
+func (c *Client) GetPrometheusJobsForLabel(datasourceUID string, labelName string) (map[string]int64, error) {
 	queryURI := fmt.Sprintf("/api/datasources/proxy/uid/%s/api/v1/query", datasourceUID)
 	req, err := http.NewRequest("GET", c.URL+queryURI, nil)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	c.setAuth(req)
 	params := req.URL.Query()
@@ -155,17 +124,17 @@ func (c *Client) GetPrometheusJobsForLabel(datasourceUID string, labelName strin
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	defer resp.Body.Close()
 	result, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	var queryResponse QueryResponse
 	if err := json.Unmarshal(result, &queryResponse); err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	jobs := make(map[string]int64)
 	for _, r := range queryResponse.Data.Result {
@@ -174,6 +143,6 @@ func (c *Client) GetPrometheusJobsForLabel(datasourceUID string, labelName strin
 		count, _ := strconv.ParseInt(countStr, 10, 64)
 		jobs[job] = count
 	}
-	return jobs
+	return jobs, nil
 
 }

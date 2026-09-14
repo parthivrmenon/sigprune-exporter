@@ -217,7 +217,10 @@ func (s *Scanner) Scan() (ScanResult, error) {
 		}
 	}
 
-	metricJobMap := g.GetPrometheusJobsForMetrics(s.datasource, unusedMetrics)
+	metricJobMap, err := g.GetPrometheusJobsForMetrics(s.datasource, unusedMetrics)
+	if err != nil {
+		return ScanResult{}, err
+	}
 
 	for metric, jobCounts := range metricJobMap {
 		for job, count := range jobCounts {
@@ -229,7 +232,10 @@ func (s *Scanner) Scan() (ScanResult, error) {
 	}
 
 	for _, label := range unusedLabels {
-		jobs := g.GetPrometheusJobsForLabel(s.datasource, label)
+		jobs, err := g.GetPrometheusJobsForLabel(s.datasource, label)
+		if err != nil {
+			return ScanResult{}, err
+		}
 		for job, count := range jobs {
 			if scanResult.UnusedLabels[label] == nil {
 				scanResult.UnusedLabels[label] = make(map[string]int64)
