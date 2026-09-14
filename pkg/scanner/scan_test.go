@@ -3,6 +3,7 @@ package scanner
 import (
 	"os"
 	"testing"
+	"time"
 
 	sigprunetestutil "sigprune/internal/testutil"
 )
@@ -18,7 +19,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestGetUnusedMetricsAndLabelsWithLimit(t *testing.T) {
-	s := NewScanner(5, mockGrafanaServerURL, sigprunetestutil.MockUser, sigprunetestutil.MockPassword, "", sigprunetestutil.MockDatasource, 1, 1)
+	s := NewScanner(5, mockGrafanaServerURL, sigprunetestutil.MockUser, sigprunetestutil.MockPassword, "", sigprunetestutil.MockDatasource, 1, 1, 10*time.Second)
 	result, err := s.Scan()
 	if err != nil {
 		t.Fatalf("Did not expect err %v", err)
@@ -53,7 +54,7 @@ func TestGetUnusedMetricsAndLabelsWithLimit(t *testing.T) {
 }
 
 func TestScan(t *testing.T) {
-	s := NewScanner(5, mockGrafanaServerURL, sigprunetestutil.MockUser, sigprunetestutil.MockPassword, "", sigprunetestutil.MockDatasource, 5, 5)
+	s := NewScanner(5, mockGrafanaServerURL, sigprunetestutil.MockUser, sigprunetestutil.MockPassword, "", sigprunetestutil.MockDatasource, 5, 5, 10*time.Second)
 	result, err := s.Scan()
 	if err != nil {
 		t.Fatalf("Did not expect err %v", err)
@@ -158,7 +159,7 @@ func TestScan(t *testing.T) {
 }
 
 func TestScanUnauthorized(t *testing.T) {
-	s := NewScanner(5, mockGrafanaServerURL, "wronguser", "wrongpassword", "", sigprunetestutil.MockDatasource, 5, 5)
+	s := NewScanner(5, mockGrafanaServerURL, "wronguser", "wrongpassword", "", sigprunetestutil.MockDatasource, 5, 5, 10*time.Second)
 	_, err := s.Scan()
 	if err == nil {
 		t.Fatal("expected error for unauthorized request, got nil")

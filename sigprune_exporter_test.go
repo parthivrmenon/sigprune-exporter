@@ -4,6 +4,7 @@ import (
 	"os"
 	"reflect"
 	"testing"
+	"time"
 
 	sigprunetestutil "sigprune/internal/testutil"
 	"sigprune/pkg/utils"
@@ -15,7 +16,7 @@ func TestCollectSuccess(t *testing.T) {
 	srv := sigprunetestutil.NewMockGrafanaServer()
 	defer srv.Close()
 
-	exporter := NewExporter(5, srv.URL, sigprunetestutil.MockUser, sigprunetestutil.MockPassword, "", sigprunetestutil.MockDatasource, 1, 1)
+	exporter := NewExporter(5, srv.URL, sigprunetestutil.MockUser, sigprunetestutil.MockPassword, "", sigprunetestutil.MockDatasource, 1, 1, 10*time.Second)
 	exporter.scanner.RefreshOnce()
 
 	expected, err := os.Open("testdata/collect_success.txt")
@@ -38,7 +39,7 @@ func TestCollectError(t *testing.T) {
 	srv := sigprunetestutil.NewMockGrafanaServer()
 	defer srv.Close()
 
-	exporter := NewExporter(5, srv.URL, "wronguser", "wrongpassword", "", sigprunetestutil.MockDatasource, 1, 1)
+	exporter := NewExporter(5, srv.URL, "wronguser", "wrongpassword", "", sigprunetestutil.MockDatasource, 1, 1, 10*time.Second)
 	exporter.scanner.RefreshOnce()
 
 	expected, err := os.Open("testdata/collect_error.txt")
@@ -60,7 +61,7 @@ func TestCollectError(t *testing.T) {
 func TestCollectStaleSnapshotAfterFailure(t *testing.T) {
 	srv := sigprunetestutil.NewMockGrafanaServer()
 
-	exporter := NewExporter(5, srv.URL, sigprunetestutil.MockUser, sigprunetestutil.MockPassword, "", sigprunetestutil.MockDatasource, 1, 1)
+	exporter := NewExporter(5, srv.URL, sigprunetestutil.MockUser, sigprunetestutil.MockPassword, "", sigprunetestutil.MockDatasource, 1, 1, 10*time.Second)
 	exporter.scanner.RefreshOnce() // succeeds: snapshot published
 
 	srv.Close()

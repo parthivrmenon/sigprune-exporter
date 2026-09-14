@@ -75,9 +75,11 @@ Once running, metrics are available at `http://localhost:8080/metrics`. Other fl
 | `-metrics-limit` | Limit the number of unused metrics to export | `50` |
 | `-labels-limit` | Limit the number of unused labels to export | `10` |
 | `-scan-interval` | How often to rescan Grafana and Prometheus in the background. Takes a Go duration such as `30s`, `5m` or `1h30m` | `5m` |
+| `-grafana-timeout` | Timeout for each HTTP request to Grafana, including Prometheus queries sent through Grafana's datasource proxy. Takes a Go duration | `60s` |
 
 > **Note:** 
 > - Increasing `labels-limit` makes each background scan take longer — each additional label adds one sequential Prometheus API call to fetch per-job series counts. It does not affect scrape latency.
+> - Prometheus queries go through Grafana's datasource proxy, which has its own timeout: `[dataproxy] timeout` in the Grafana configuration, 30 seconds by default. Setting `-grafana-timeout` above that has no effect on those queries unless you also raise Grafana's setting.
 
 ### How scanning works
 

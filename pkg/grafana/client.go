@@ -13,23 +13,23 @@ type Client struct {
 	httpClient *http.Client
 }
 
-func NewClient(url, username, password string) *Client {
+func NewClient(url, username, password string, timeout time.Duration) *Client {
 	return &Client{
 		URL:      url,
 		Username: username,
 		Password: password,
 		httpClient: &http.Client{
-			Timeout: 10 * time.Second,
+			Timeout: timeout,
 		},
 	}
 }
 
-func NewClientWithAPIKey(url, apiKey string) *Client {
+func NewClientWithAPIKey(url, apiKey string, timeout time.Duration) *Client {
 	return &Client{
 		URL:    url,
 		APIKey: apiKey,
 		httpClient: &http.Client{
-			Timeout: 10 * time.Second,
+			Timeout: timeout,
 		},
 	}
 }

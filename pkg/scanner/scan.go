@@ -31,6 +31,7 @@ type Scanner struct {
 	datasource         string
 	exportLimitMetrics int
 	exportLimitLabels  int
+	grafanaTimeout     time.Duration
 	mu                 sync.RWMutex
 	snapshot           *ScanResult
 	lastErr            error
@@ -44,6 +45,7 @@ func NewScanner(
 	datasource string,
 	exportLimitMetrics int,
 	exportLimitLabels int,
+	grafanaTimeout time.Duration,
 ) *Scanner {
 	return &Scanner{
 		tsdbMetricsLimit:   tsdbMetricsLimit,
@@ -54,14 +56,15 @@ func NewScanner(
 		datasource:         datasource,
 		exportLimitMetrics: exportLimitMetrics,
 		exportLimitLabels:  exportLimitLabels,
+		grafanaTimeout:     grafanaTimeout,
 	}
 }
 
 func (s *Scanner) newGrafanaClient() *grafana.Client {
 	if s.apiKey != "" {
-		return grafana.NewClientWithAPIKey(s.grafanaURL, s.apiKey)
+		return grafana.NewClientWithAPIKey(s.grafanaURL, s.apiKey, s.grafanaTimeout)
 	}
-	return grafana.NewClient(s.grafanaURL, s.adminUser, s.adminPassword)
+	return grafana.NewClient(s.grafanaURL, s.adminUser, s.adminPassword, s.grafanaTimeout)
 }
 
 type ScanResult struct {

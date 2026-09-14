@@ -39,7 +39,7 @@ type Exporter struct {
 	sigpruneLabelsExportLimitDesc       *prometheus.Desc
 }
 
-func NewExporter(tsdbMetricsLimit int, grafanaURL string, adminUser string, adminPassword string, apiKey string, datasource string, exportLimitMetrics int, exportLimitLabels int) *Exporter {
+func NewExporter(tsdbMetricsLimit int, grafanaURL string, adminUser string, adminPassword string, apiKey string, datasource string, exportLimitMetrics int, exportLimitLabels int, grafanaTimeout time.Duration) *Exporter {
 	return &Exporter{
 		scanner: scanner.NewScanner(
 			tsdbMetricsLimit,
@@ -50,6 +50,7 @@ func NewExporter(tsdbMetricsLimit int, grafanaURL string, adminUser string, admi
 			datasource,
 			exportLimitMetrics,
 			exportLimitLabels,
+			grafanaTimeout,
 		),
 		sigpruneBuildInfoDesc: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "", "build_info"),
@@ -276,6 +277,7 @@ func main() {
 		adminPassword      = flag.String("password", "", "Password for authentication")
 		apiKey             = flag.String("api-key", "", "Grafana API key for authentication")
 		scanInterval       = flag.Duration("scan-interval", 5*time.Minute, "How often to rescan Grafana and Prometheus in the background")
+		grafanaTimeout     = flag.Duration("grafana-timeout", 60*time.Second, "Timeout for each HTTP request to Grafana, including Prometheus queries sent through its datasource proxy")
 	)
 	flag.Parse()
 	if *datasource == "" {
@@ -302,8 +304,11 @@ func main() {
 	if *scanInterval <= 0 {
 		log.Fatal("scan-interval must be a positive duration")
 	}
+	if *grafanaTimeout <= 0 {
+		log.Fatal("grafana-timeout must be a positive duration")
+	}
 
-	exporter := NewExporter(*tsdbMetricsLimit, *grafanaURL, *adminUser, *adminPassword, *apiKey, *datasource, *exportLimitMetrics, *exportLimitLabels)
+	exporter := NewExporter(*tsdbMetricsLimit, *grafanaURL, *adminUser, *adminPassword, *apiKey, *datasource, *exportLimitMetrics, *exportLimitLabels, *grafanaTimeout)
 
 	// Test Grafana connection before starting
 	exporter.scanner.TestConnection()
