@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"sigprune/pkg/scanner"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -58,7 +59,7 @@ func NewExporter(tsdbMetricsLimit int, grafanaURL string, adminUser string, admi
 		),
 		sigpruneUpDesc: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "", "up"),
-			"Was the last scrape successful",
+			"Was the last background scan successful",
 			nil,
 			nil,
 		),
@@ -112,13 +113,13 @@ func NewExporter(tsdbMetricsLimit int, grafanaURL string, adminUser string, admi
 		),
 		sigpruneTotalUnusedMetricsDesc: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "", "total_unused_metrics"),
-			"Number of unused metrics identified in this scrape (capped by export limit)",
+			"Number of unused metrics identified in the last successful background scan (capped by export limit)",
 			nil,
 			nil,
 		),
 		sigpruneTotalUnusedLabelsDesc: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "", "total_unused_labels"),
-			"Number of unused labels identified in this scrape (capped by export limit)",
+			"Number of unused labels identified in the last successful background scan (capped by export limit)",
 			nil,
 			nil,
 		),
@@ -164,22 +165,28 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 		buildRevision,
 	)
 
-	unusedMetricsAndLabelsPerJob, err := e.scanner.Scan()
-	if err != nil {
-		ch <- prometheus.MustNewConstMetric(
-			e.sigpruneUpDesc,
-			prometheus.GaugeValue,
-			float64(0),
-		)
+	// Reads the latest snapshot published by the background scan.
+	snap, err := e.scanner.GetSnapshot()
+
+	// Cold start: no successful scan yet. Emit an empty result
+	if snap == nil {
+		ch <- prometheus.MustNewConstMetric(e.sigpruneUpDesc, prometheus.GaugeValue, 0)
 		return
+	}
+
+	// up reflects the the actual last ATTEMPT status;
+	// The metrics emitted comes from the last SUCCESS. (i.e they can be stale)
+	up := 1.0
+	if err != nil {
+		up = 0
 	}
 	ch <- prometheus.MustNewConstMetric(
 		e.sigpruneUpDesc,
 		prometheus.GaugeValue,
-		float64(1),
+		up,
 	)
 
-	for metric, perJobCount := range unusedMetricsAndLabelsPerJob.UnusedMetrics {
+	for metric, perJobCount := range snap.UnusedMetrics {
 		for job, count := range perJobCount {
 			ch <- prometheus.MustNewConstMetric(
 				e.sigpruneUnusedMetricCardinalityDesc,
@@ -191,7 +198,7 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 		}
 	}
 
-	for label, perJobCount := range unusedMetricsAndLabelsPerJob.UnusedLabels {
+	for label, perJobCount := range snap.UnusedLabels {
 		for job, count := range perJobCount {
 			ch <- prometheus.MustNewConstMetric(
 				e.sigpruneUnusedLabelCardinalityDesc,
@@ -206,54 +213,53 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		e.sigpruneDashboardCountDesc,
 		prometheus.GaugeValue,
-		float64(unusedMetricsAndLabelsPerJob.DashboardCount),
+		float64(snap.DashboardCount),
 	)
 	ch <- prometheus.MustNewConstMetric(
 		e.sigpruneAlertRuleCountDesc,
 		prometheus.GaugeValue,
-		float64(unusedMetricsAndLabelsPerJob.AlertRuleCount),
+		float64(snap.AlertRuleCount),
 	)
 	ch <- prometheus.MustNewConstMetric(
 		e.sigpruneTotalTSDBMetricsDesc,
 		prometheus.GaugeValue,
-		float64(unusedMetricsAndLabelsPerJob.TotalTSDBMetrics),
+		float64(snap.TotalTSDBMetrics),
 	)
 	ch <- prometheus.MustNewConstMetric(
 		e.sigpruneTotalTSDBLabelsDesc,
 		prometheus.GaugeValue,
-		float64(unusedMetricsAndLabelsPerJob.TotalTSDBLabels),
+		float64(snap.TotalTSDBLabels),
 	)
 	ch <- prometheus.MustNewConstMetric(
 		e.sigpruneTotalUsedMetricsDesc,
 		prometheus.GaugeValue,
-		float64(unusedMetricsAndLabelsPerJob.TotalUsedMetrics),
+		float64(snap.TotalUsedMetrics),
 	)
 	ch <- prometheus.MustNewConstMetric(
 		e.sigpruneTotalUsedLabelsDesc,
 		prometheus.GaugeValue,
-		float64(unusedMetricsAndLabelsPerJob.TotalUsedLabels),
+		float64(snap.TotalUsedLabels),
 	)
 	ch <- prometheus.MustNewConstMetric(
 		e.sigpruneTotalUnusedMetricsDesc,
 		prometheus.GaugeValue,
-		float64(unusedMetricsAndLabelsPerJob.TotalUnusedMetrics),
+		float64(snap.TotalUnusedMetrics),
 	)
 	ch <- prometheus.MustNewConstMetric(
 		e.sigpruneTotalUnusedLabelsDesc,
 		prometheus.GaugeValue,
-		float64(unusedMetricsAndLabelsPerJob.TotalUnusedLabels),
+		float64(snap.TotalUnusedLabels),
 	)
 	ch <- prometheus.MustNewConstMetric(
 		e.sigpruneMetricsExportLimitDesc,
 		prometheus.GaugeValue,
-		float64(unusedMetricsAndLabelsPerJob.MetricsExportLimit),
+		float64(snap.MetricsExportLimit),
 	)
 	ch <- prometheus.MustNewConstMetric(
 		e.sigpruneLabelsExportLimitDesc,
 		prometheus.GaugeValue,
-		float64(unusedMetricsAndLabelsPerJob.LabelsExportLimit),
+		float64(snap.LabelsExportLimit),
 	)
-
 }
 
 func main() {
@@ -269,6 +275,7 @@ func main() {
 		adminUser          = flag.String("user", "", "Username for authentication")
 		adminPassword      = flag.String("password", "", "Password for authentication")
 		apiKey             = flag.String("api-key", "", "Grafana API key for authentication")
+		scanInterval       = flag.Duration("scan-interval", 5*time.Minute, "How often to rescan Grafana and Prometheus in the background")
 	)
 	flag.Parse()
 	if *datasource == "" {
@@ -292,6 +299,9 @@ func main() {
 	if *exportLimitLabels <= 0 {
 		log.Fatal("labels-limit must be a positive integer")
 	}
+	if *scanInterval <= 0 {
+		log.Fatal("scan-interval must be a positive duration")
+	}
 
 	exporter := NewExporter(*tsdbMetricsLimit, *grafanaURL, *adminUser, *adminPassword, *apiKey, *datasource, *exportLimitMetrics, *exportLimitLabels)
 
@@ -301,6 +311,9 @@ func main() {
 	reg := prometheus.NewRegistry()
 
 	reg.MustRegister(exporter)
+
+	// Scans run in the background; Collect only reads the latest snapshot.
+	go exporter.scanner.Run(*scanInterval)
 
 	// Expose /metrics HTTP endpoint using the created custom registry.
 	http.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg}))

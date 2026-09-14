@@ -16,6 +16,7 @@ func TestCollectSuccess(t *testing.T) {
 	defer srv.Close()
 
 	exporter := NewExporter(5, srv.URL, sigprunetestutil.MockUser, sigprunetestutil.MockPassword, "", sigprunetestutil.MockDatasource, 1, 1)
+	exporter.scanner.RefreshOnce()
 
 	expected, err := os.Open("testdata/collect_success.txt")
 	if err != nil {
@@ -38,6 +39,7 @@ func TestCollectError(t *testing.T) {
 	defer srv.Close()
 
 	exporter := NewExporter(5, srv.URL, "wronguser", "wrongpassword", "", sigprunetestutil.MockDatasource, 1, 1)
+	exporter.scanner.RefreshOnce()
 
 	expected, err := os.Open("testdata/collect_error.txt")
 	if err != nil {
@@ -48,6 +50,33 @@ func TestCollectError(t *testing.T) {
 	if err := testutil.CollectAndCompare(exporter, expected,
 		"sigprune_build_info",
 		"sigprune_up",
+	); err != nil {
+		t.Errorf("unexpected metric output:\n%v", err)
+	}
+}
+
+// A failed refresh must keep serving the last successful snapshot, with
+// sigprune_up 0 reporting that the most recent attempt failed.
+func TestCollectStaleSnapshotAfterFailure(t *testing.T) {
+	srv := sigprunetestutil.NewMockGrafanaServer()
+
+	exporter := NewExporter(5, srv.URL, sigprunetestutil.MockUser, sigprunetestutil.MockPassword, "", sigprunetestutil.MockDatasource, 1, 1)
+	exporter.scanner.RefreshOnce() // succeeds: snapshot published
+
+	srv.Close()
+	exporter.scanner.RefreshOnce() // fails: lastErr set, snapshot kept
+
+	expected, err := os.Open("testdata/collect_stale.txt")
+	if err != nil {
+		t.Fatalf("failed to open fixture: %v", err)
+	}
+	defer expected.Close()
+
+	if err := testutil.CollectAndCompare(exporter, expected,
+		"sigprune_build_info",
+		"sigprune_up",
+		"sigprune_unused_label_cardinality",
+		"sigprune_unused_metric_cardinality",
 	); err != nil {
 		t.Errorf("unexpected metric output:\n%v", err)
 	}

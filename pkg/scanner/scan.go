@@ -4,6 +4,8 @@ import (
 	"log"
 	"sigprune/pkg/grafana"
 	"sigprune/pkg/utils"
+	"sync"
+	"time"
 )
 
 var systemLabels = map[string]struct{}{
@@ -29,6 +31,9 @@ type Scanner struct {
 	datasource         string
 	exportLimitMetrics int
 	exportLimitLabels  int
+	mu                 sync.RWMutex
+	snapshot           *ScanResult
+	lastErr            error
 }
 
 func NewScanner(
@@ -72,6 +77,42 @@ type ScanResult struct {
 	TotalUnusedLabels  int
 	MetricsExportLimit int
 	LabelsExportLimit  int
+}
+
+// Returns the result of the last successful scan. It is nil until the first scan completes
+func (s *Scanner) GetSnapshot() (*ScanResult, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.snapshot, s.lastErr
+}
+
+// Run scans once immediately and then repeats on every tick of interval.
+// It blocks forever and is meant to be started as a goroutine.
+func (s *Scanner) Run(interval time.Duration) {
+	s.RefreshOnce()
+	t := time.NewTicker(interval)
+	defer t.Stop()
+	for range t.C {
+		s.RefreshOnce()
+	}
+}
+
+// RefreshOnce runs one full scan and publishes the result.
+func (s *Scanner) RefreshOnce() {
+	result, err := s.Scan()
+
+	s.mu.Lock()
+	if err != nil {
+		s.lastErr = err // keep the previous snapshot and simply mark the error
+	} else {
+		s.snapshot = &result // update the pointer
+		s.lastErr = nil      // and clear the error
+	}
+	s.mu.Unlock()
+
+	if err != nil {
+		log.Printf("Scan failed (serving previous snapshot): %v", err)
+	}
 }
 
 func (s *Scanner) Scan() (ScanResult, error) {

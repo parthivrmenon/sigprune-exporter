@@ -1,6 +1,6 @@
 # HELP sigprune_build_info Build information
 # TYPE sigprune_build_info gauge
 sigprune_build_info{revision="unknown",version="dev"} 1
-# HELP sigprune_up Was the last scrape successful
+# HELP sigprune_up Was the last background scan successful
 # TYPE sigprune_up gauge
 sigprune_up 0

@@ -10,4 +10,4 @@ sigprune_unused_label_cardinality{job="prometheus",label="handler"} 65
 sigprune_unused_metric_cardinality{job="prometheus",metric="prometheus_http_requests_total"} 65
 # HELP sigprune_up Was the last background scan successful
 # TYPE sigprune_up gauge
-sigprune_up 1
+sigprune_up 0
