@@ -50,6 +50,10 @@
       {
         "name": "collector",
         "value": 48
+      },
+      {
+        "name": "__tmp_foo",
+        "value": 44
       }
     ],
     "memoryInBytesByLabelName": [

@@ -4,22 +4,14 @@ import (
 	"log"
 	"sigprune/pkg/grafana"
 	"sigprune/pkg/utils"
+	"strings"
 	"sync"
 	"time"
 )
 
 var systemLabels = map[string]struct{}{
-	"__name__":            {},
-	"__address__":         {},
-	"__scheme__":          {},
-	"__metrics_path__":    {},
-	"__scrape_interval__": {},
-	"__scrape_timeout__":  {},
-	"__param_":            {},
-	"__tmp__":             {},
-	"__meta_":             {},
-	"le":                  {},
-	"quantile":            {},
+	"le":       {},
+	"quantile": {},
 }
 
 type Scanner struct {
@@ -118,6 +110,18 @@ func (s *Scanner) RefreshOnce() {
 	}
 }
 
+// Check if label matches a system label
+func isSystemLabel(labelName string) bool {
+	if _, exists := systemLabels[labelName]; exists {
+		return true
+	}
+	if strings.HasPrefix(labelName, "__") {
+		return true
+	}
+	return false
+
+}
+
 func (s *Scanner) Scan() (ScanResult, error) {
 	var scanResult ScanResult
 
@@ -139,9 +143,11 @@ func (s *Scanner) Scan() (ScanResult, error) {
 	var filteredLabels []grafana.LabelCount
 	for _, label := range topTSDBLabels {
 		// skip system labels
-		if _, exists := systemLabels[label.Name]; exists {
+		if isSystemLabel(label.Name) {
 			continue
+
 		}
+
 		filteredLabels = append(filteredLabels, label)
 	}
 
