@@ -117,7 +117,7 @@ func TestScan(t *testing.T) {
 		DashboardCount:     1,  // From dashboards.json
 		AlertRuleCount:     4,  // From alert_rules.json
 		TotalTSDBMetrics:   5,  // From tsdb_status.json (limited by tsdb-metrics-limit=5)
-		TotalTSDBLabels:    5,  // From tsdb_status.json (all non-system labels)
+		TotalTSDBLabels:    6,  // Every label in tsdb_status.json, before system-label filtering
 		TotalUsedMetrics:   11, // From dashboard and alert rule expressions
 		TotalUsedLabels:    10, // From dashboard and alert rule expressions
 		TotalUnusedMetrics: 5,  // All TSDB metrics are unused
