@@ -1,10 +1,8 @@
 package grafana
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 )
@@ -29,25 +27,13 @@ type LabelCount struct {
 }
 
 func (c *Client) GetTSDBStatus(datasourceUID string, limit int) (TSDBStatus, error) {
-	tsdbURI := fmt.Sprintf("/api/datasources/proxy/uid/%s/api/v1/status/tsdb?limit=%d", datasourceUID, limit)
-	req, err := http.NewRequest("GET", c.URL+tsdbURI, nil)
-	if err != nil {
-		return TSDBStatus{}, err
+	tsdbURI := fmt.Sprintf("/api/datasources/proxy/uid/%s/api/v1/status/tsdb", datasourceUID)
+	params := url.Values{
+		"limit": {strconv.Itoa(limit)},
 	}
-	c.setAuth(req)
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return TSDBStatus{}, err
-	}
-	defer resp.Body.Close()
-	result, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return TSDBStatus{}, err
-	}
-
 	var tsdbStatus TSDBStatus
-	if err := json.Unmarshal(result, &tsdbStatus); err != nil {
+	err := c.getJSON(tsdbURI, params, &tsdbStatus)
+	if err != nil {
 		return TSDBStatus{}, err
 	}
 
@@ -70,28 +56,15 @@ func (c *Client) GetPrometheusJobsForMetrics(datasourceUID string, metrics []str
 		return map[string]map[string]int64{}, nil
 	}
 	queryURI := fmt.Sprintf("/api/datasources/proxy/uid/%s/api/v1/query", datasourceUID)
-	req, err := http.NewRequest("GET", c.URL+queryURI, nil)
-	if err != nil {
-		return nil, err
-	}
-	c.setAuth(req)
-	params := req.URL.Query()
 	metricNames := strings.Join(metrics, "|")
-	params.Add("query", fmt.Sprintf("count by (job, __name__) ({__name__=~\"%s\"})", metricNames))
-	req.URL.RawQuery = params.Encode()
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, err
+	query := fmt.Sprintf("count by (job, __name__) ({__name__=~\"%s\"})", metricNames)
+	params := url.Values{
+		"query": {query},
 	}
-	defer resp.Body.Close()
-	result, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
 	var queryResponse QueryResponse
-	if err := json.Unmarshal(result, &queryResponse); err != nil {
+	err := c.getJSON(queryURI, params, &queryResponse)
+
+	if err != nil {
 		return nil, err
 	}
 	metricJobMap := make(map[string]map[string]int64)
@@ -113,27 +86,14 @@ func (c *Client) GetPrometheusJobsForMetrics(datasourceUID string, metrics []str
 
 func (c *Client) GetPrometheusJobsForLabel(datasourceUID string, labelName string) (map[string]int64, error) {
 	queryURI := fmt.Sprintf("/api/datasources/proxy/uid/%s/api/v1/query", datasourceUID)
-	req, err := http.NewRequest("GET", c.URL+queryURI, nil)
-	if err != nil {
-		return nil, err
-	}
-	c.setAuth(req)
-	params := req.URL.Query()
-	params.Add("query", fmt.Sprintf("count by (job) ({%s!=\"\"})", labelName))
-	req.URL.RawQuery = params.Encode()
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	result, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
+	query := fmt.Sprintf("count by (job) ({%s!=\"\"})", labelName)
+	params := url.Values{
+		"query": {query},
 	}
 
 	var queryResponse QueryResponse
-	if err := json.Unmarshal(result, &queryResponse); err != nil {
+	err := c.getJSON(queryURI, params, &queryResponse)
+	if err != nil {
 		return nil, err
 	}
 	jobs := make(map[string]int64)

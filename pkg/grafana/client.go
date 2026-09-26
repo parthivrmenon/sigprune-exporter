@@ -1,7 +1,11 @@
 package grafana
 
 import (
+	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -40,4 +44,42 @@ func (c *Client) setAuth(req *http.Request) {
 	} else {
 		req.SetBasicAuth(c.Username, c.Password)
 	}
+}
+
+// getJSON sends an authenticated GET to path and decodes a 200 OK JSON body into
+// out, which must be a pointer.
+// path is a bare API path with no query string of its own ("/api/search", not "/api/search?type=dash-db")
+// query parameters belong in params which may be nil
+// Any non-200 response is returned as an error carrying the status and body.
+func (c *Client) getJSON(path string, params url.Values, out any) error {
+	u := c.URL + path
+	if len(params) > 0 {
+		u += "?" + params.Encode()
+	}
+	req, err := http.NewRequest("GET", u, nil)
+	if err != nil {
+		return err
+	}
+	c.setAuth(req)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("request failed with status %d, and failed to read body: %w", resp.StatusCode, err)
+		}
+		return fmt.Errorf("API error (Status %d): %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	err = json.NewDecoder(resp.Body).Decode(out)
+	if err != nil {
+		return err
+	}
+	return nil
+
 }
