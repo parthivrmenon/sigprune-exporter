@@ -10,10 +10,6 @@ type Dashboard struct {
 	Title string `json:"title"`
 }
 
-type DashboardPanelExpr struct {
-	Expr string `json:"expr"`
-}
-
 type DashboardPanelTarget struct {
 	Expr  string `json:"expr"`
 	RefID string `json:"refId"`

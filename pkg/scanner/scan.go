@@ -193,9 +193,9 @@ func (s *Scanner) Scan() (ScanResult, error) {
 	}
 
 	// create a used labels Set for lookup
-	usedSet := make(map[string]bool, len(labels))
+	usedLabelSet := make(map[string]bool, len(labels))
 	for _, m := range labels {
-		usedSet[m] = true
+		usedLabelSet[m] = true
 	}
 
 	scanResult.UnusedMetrics = make(map[string]map[string]int64)
@@ -204,24 +204,21 @@ func (s *Scanner) Scan() (ScanResult, error) {
 	// Filter out used labels
 	var unusedLabels []string
 	for _, label := range filteredLabels {
-		if !usedSet[label.Name] && len(unusedLabels) < s.exportLimitLabels {
+		if !usedLabelSet[label.Name] && len(unusedLabels) < s.exportLimitLabels {
 			unusedLabels = append(unusedLabels, label.Name)
 		}
 	}
 
-	// usedMetrics := append(dashboardData.Metrics, alertData.Metrics...)
-	// log.Printf("Got %d used metrics from dashboards and alert rules", len(usedMetrics))
-
 	// create a used metrics Set for lookup
-	usedSet = make(map[string]bool, len(metrics))
+	usedMetricSet := make(map[string]bool, len(metrics))
 	for _, m := range metrics {
-		usedSet[m] = true
+		usedMetricSet[m] = true
 	}
 
 	// Filter out used metrics
 	var unusedMetrics []string
 	for _, metric := range topTSDBMetrics {
-		if !usedSet[metric.Name] && len(unusedMetrics) < s.exportLimitMetrics {
+		if !usedMetricSet[metric.Name] && len(unusedMetrics) < s.exportLimitMetrics {
 			unusedMetrics = append(unusedMetrics, metric.Name)
 		}
 	}
@@ -254,8 +251,8 @@ func (s *Scanner) Scan() (ScanResult, error) {
 	}
 
 	// Populate statistics
-	scanResult.TotalUsedMetrics = len(metrics)
-	scanResult.TotalUsedLabels = len(labels)
+	scanResult.TotalUsedMetrics = len(usedMetricSet)
+	scanResult.TotalUsedLabels = len(usedLabelSet)
 	scanResult.TotalUnusedMetrics = len(unusedMetrics)
 	scanResult.TotalUnusedLabels = len(unusedLabels)
 	scanResult.MetricsExportLimit = s.exportLimitMetrics

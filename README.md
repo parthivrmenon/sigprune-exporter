@@ -105,8 +105,8 @@ Dashboards and alert rules usually change over hours, not minutes, so the `5m` d
 | `sigprune_alert_rule_count` | Gauge | — | Number of Grafana alert rules analyzed |
 | `sigprune_total_tsdb_metrics` | Gauge | — | Number of metric names returned by the Prometheus TSDB status API, capped at `-tsdb-metrics-limit`. If it equals the limit, Prometheus likely has more metrics than were analyzed |
 | `sigprune_total_tsdb_labels` | Gauge | — | Number of label names returned by the Prometheus TSDB status API, capped at `-tsdb-metrics-limit` |
-| `sigprune_total_used_metrics` | Gauge | — | Number of metric references found in dashboards and alert rules. **Currently counts every reference, not distinct metrics** — a metric used in 20 panels counts 20 times |
-| `sigprune_total_used_labels` | Gauge | — | Number of label references found in dashboards and alert rules. Like `sigprune_total_used_metrics`, counts every reference, not distinct labels |
+| `sigprune_total_used_metrics` | Gauge | — | Number of distinct metric names referenced in dashboards and alert rules. A metric used in 20 panels counts once |
+| `sigprune_total_used_labels` | Gauge | — | Number of distinct label names referenced in dashboards and alert rules |
 | `sigprune_total_unused_metrics` | Gauge | — | Number of unused metrics exported, capped at `-metrics-limit`. Not a true total: if it equals `sigprune_metrics_export_limit`, there are likely more unused metrics |
 | `sigprune_total_unused_labels` | Gauge | — | Number of unused labels exported, capped at `-labels-limit`. Not a true total: if it equals `sigprune_labels_export_limit`, there are likely more unused labels |
 | `sigprune_metrics_export_limit` | Gauge | — | Configured value of `-metrics-limit` |
