@@ -1,8 +1,7 @@
 package grafana
 
 import (
-	"encoding/json"
-	"net/http"
+	"net/url"
 )
 
 type Dashboard struct {
@@ -52,50 +51,20 @@ type Datasource struct {
 }
 
 func (c *Client) GetDashboards() ([]Dashboard, error) {
-	req, err := http.NewRequest("GET", c.URL+"/api/search?type=dash-db", nil)
+	var d []Dashboard
+	err := c.getJSON("/api/search", url.Values{"type": {"dash-db"}}, &d)
 	if err != nil {
 		return nil, err
 	}
-	c.setAuth(req)
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	var dashboards []Dashboard
-	err = json.NewDecoder(resp.Body).Decode(&dashboards)
-	if err != nil {
-		return nil, err
-	}
-
-	return dashboards, nil
+	return d, nil
 }
 
 func (c *Client) GetDashboardByUID(uid string) (*DashboardResponse, error) {
-	req, err := http.NewRequest("GET", c.URL+"/api/dashboards/uid/"+uid, nil)
-	if err != nil {
-		return nil, err
-	}
-	c.setAuth(req)
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
 	var dashboardResponse DashboardResponse
-	err = json.NewDecoder(resp.Body).Decode(&dashboardResponse)
+	err := c.getJSON("/api/dashboards/uid/"+uid, nil, &dashboardResponse)
 	if err != nil {
 		return nil, err
 	}
-
-	// bodyBytes, err := io.ReadAll(resp.Body)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// utils.PrintAsJSON(bodyBytes)
 
 	return &dashboardResponse, nil
 }
@@ -117,19 +86,8 @@ func collectPanelExprs(panels []DashboardPanel, exprs []string) []string {
 }
 
 func (c *Client) GetDatasources() ([]Datasource, error) {
-	req, err := http.NewRequest("GET", c.URL+"/api/datasources", nil)
-	if err != nil {
-		return nil, err
-	}
-	c.setAuth(req)
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
 	var datasources []Datasource
-	err = json.NewDecoder(resp.Body).Decode(&datasources)
+	err := c.getJSON("/api/datasources", nil, &datasources)
 	if err != nil {
 		return nil, err
 	}
