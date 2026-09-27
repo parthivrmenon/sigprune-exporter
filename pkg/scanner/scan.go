@@ -265,10 +265,10 @@ func (s *Scanner) Scan() (ScanResult, error) {
 
 }
 
-func (s *Scanner) TestConnection() {
+func (s *Scanner) TestConnection(datasourceUID string) {
 	g := s.newGrafanaClient()
-	if err := g.TestConnection(); err != nil {
-		log.Fatal("Failed to connect to Grafana:", err)
+	if err := g.TestConnection(datasourceUID); err != nil {
+		log.Fatal("Failed to connect to Grafana: ", err)
 	}
 
 }

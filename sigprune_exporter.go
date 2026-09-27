@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"net/http"
 	"sigprune/pkg/scanner"
@@ -264,7 +263,7 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 }
 
 func main() {
-	fmt.Println("starting sigprune-exporter...")
+	log.Println("starting sigprune-exporter...")
 
 	var (
 		addr               = flag.String("listen-address", ":8080", "The address to listen on for HTTP requests.")
@@ -311,7 +310,7 @@ func main() {
 	exporter := NewExporter(*tsdbMetricsLimit, *grafanaURL, *adminUser, *adminPassword, *apiKey, *datasource, *exportLimitMetrics, *exportLimitLabels, *grafanaTimeout)
 
 	// Test Grafana connection before starting
-	exporter.scanner.TestConnection()
+	exporter.scanner.TestConnection(*datasource)
 
 	reg := prometheus.NewRegistry()
 
