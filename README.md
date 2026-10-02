@@ -24,7 +24,7 @@ A sample dashboard is included in `docker/grafana/provisioning/dashboards/sigpru
 git clone https://github.com/parthivrmenon/sigprune-exporter.git
 cd sigprune-exporter
 go build \
-  -ldflags "-X main.buildVersion=v1.0.0 -X main.buildRevision=$(git rev-parse --short HEAD)" \
+  -ldflags "-X main.buildVersion=v0.1.0 -X main.buildRevision=$(git rev-parse --short HEAD)" \
   -o sigprune-exporter .
 ```
 
