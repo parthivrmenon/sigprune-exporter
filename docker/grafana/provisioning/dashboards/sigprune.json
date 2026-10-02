@@ -41,6 +41,41 @@
   "links": [],
   "panels": [
     {
+      "datasource": { "type": "prometheus", "uid": "${ds_prometheus}" },
+      "description": "Version and git revision of the running exporter",
+      "fieldConfig": {
+        "defaults": { "color": { "fixedColor": "text", "mode": "fixed" }, "mappings": [] },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 5 },
+      "id": 23,
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showPercentChange": false,
+        "textMode": "name",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.6.1",
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "${ds_prometheus}" },
+          "editorMode": "code",
+          "expr": "sigprune_build_info",
+          "instant": true,
+          "legendFormat": "{{version}} · {{revision}}",
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "Exporter Build",
+      "type": "stat"
+    },
+    {
       "collapsed": false,
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
       "id": 1,
@@ -565,7 +600,7 @@
     {
       "collapsed": false,
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 22 },
-      "id": 8,
+      "id": 20,
       "title": "Unused Labels",
       "type": "row"
     },
@@ -599,7 +634,7 @@
         ]
       },
       "gridPos": { "h": 12, "w": 12, "x": 0, "y": 23 },
-      "id": 9,
+      "id": 21,
       "options": {
         "cellHeight": "sm",
         "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false },
@@ -736,6 +771,5 @@
   "timepicker": {},
   "timezone": "browser",
   "title": "Unused Metrics And Labels (Prometheus)",
-  "uid": "sigprune-unused-metrics",
   "version": 1
 }

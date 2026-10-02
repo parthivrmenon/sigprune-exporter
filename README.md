@@ -1,8 +1,10 @@
 # sigprune-exporter
 
-**sigprune** *(n.)* — *"Signal Pruner"*. A Prometheus exporter for detecting unused metrics and labels within a Grafana datasource.
+**sigprune** *(n.)* — *"Signal Pruner"*
 
-A metric/label is deemed 'unused' if:
+A Prometheus exporter for detecting unused metrics and labels within a Grafana datasource.
+
+A metric/label is considered 'unused' if:
 - it does not appear in any Grafana Dashboard
 - it does not appear in any Grafana Alert Rule
 
@@ -12,11 +14,38 @@ The exporter allows you to visualize these unused metrics and labels in a Grafan
 
 A sample dashboard is included in `docker/grafana/provisioning/dashboards/sigprune.json` and is automatically provisioned when using the local Docker stack.
 
+### Importing the dashboard
 
-*Note: Currently, the exporter only supports Prometheus datasources*
+The dashboard is published on Grafana.com as ID **`25850`**. 
+
+You can also import `docker/grafana/provisioning/dashboards/sigprune.json` directly from this repo.
+
+**Note:** For the dashboard to work correctly the job that scrapes sigprune-exporter must set `honor_labels: true`
+
+>
+> ```yaml
+> scrape_configs:
+>   - job_name: "sigprune"
+>     honor_labels: true
+>     static_configs:
+>       - targets: ["localhost:8080"]
+> ```
+
+`sigprune_unused_metric_cardinality` and `sigprune_unused_label_cardinality` carry a `job` label naming the original job that collected the series. However, without `honor_labels` Prometheus overwrites it with `sigprune`, so every series reports the same job and the per-job breakdowns collapse into one number.
 
 
 ## Installation
+
+### Download a release binary
+
+Pre-built binaries for Linux (amd64) and macOS (arm64 and amd64) are attached to each [release](https://github.com/parthivrmenon/sigprune-exporter/releases). Download the one for your platform, make it executable, and run it:
+
+```bash
+chmod +x sigprune-exporter-linux-amd64
+./sigprune-exporter-linux-amd64 --help
+```
+
+### Build from source
 
 **Requires** [Go](https://go.dev/dl/) 1.25+
 
@@ -36,11 +65,7 @@ This produces a `sigprune-exporter` binary in the current directory. The `buildV
 
 ## Running the exporter
 
-The exporter needs two things:
-- `-datasource`: the UID of the Prometheus datasource to analyze. Find it in Grafana under **Connections → Data sources → (your datasource) → Settings**.
-- Grafana credentials: either `-user` and `-password` (basic auth), or `-api-key`. Provide one method, not both.
-
-**Basic auth:**
+**Using Basic auth:**
 ```bash
 ./sigprune-exporter \
   -grafana http://localhost:3000 \
@@ -49,7 +74,7 @@ The exporter needs two things:
   -datasource <prometheus-datasource-uid>
 ```
 
-**API key:**
+**Using an API key:**
 ```bash
 ./sigprune-exporter \
   -grafana http://localhost:3000 \
@@ -57,9 +82,7 @@ The exporter needs two things:
   -datasource <prometheus-datasource-uid>
 ```
 
-`-grafana` defaults to `http://localhost:3000`, so you can leave it out when Grafana runs locally.
-
-Once running, metrics are available at `http://localhost:8080/metrics`. Other flags are optional; see [Configuration](#configuration) for the full list and defaults.
+See [Configuration](#configuration) for the full list.
 
 ## Configuration
 
@@ -78,19 +101,21 @@ Once running, metrics are available at `http://localhost:8080/metrics`. Other fl
 | `-grafana-timeout` | Timeout for each HTTP request to Grafana, including Prometheus queries sent through Grafana's datasource proxy. Takes a Go duration | `60s` |
 
 > **Note:** 
-> - Increasing `labels-limit` makes each background scan take longer — each additional label adds one sequential Prometheus API call to fetch per-job series counts. It does not affect scrape latency.
-> - Prometheus queries go through Grafana's datasource proxy, which has its own timeout: `[dataproxy] timeout` in the Grafana configuration, 30 seconds by default. Setting `-grafana-timeout` above that has no effect on those queries unless you also raise Grafana's setting.
+> - Increasing `labels-limit` makes each background scan take longer. Each label adds one sequential Prometheus API call to fetch per-job series counts.
+> - Prometheus queries go through Grafana's datasource proxy, which has its own timeout which is 30 seconds by default. Setting `-grafana-timeout` above that has no effect on those queries unless you also raise Grafana's setting as well.
 
 ### How scanning works
 
-The exporter scans Grafana and Prometheus in the background: once at startup, then every `-scan-interval`. A scrape of `/metrics` serves the result of the latest successful scan and never waits for a scan to run, so scrape latency stays small regardless of how many dashboards and alert rules Grafana has.
+The exporter scans Grafana and Prometheus in the background, once at startup, then every `-scan-interval`. 
+
+A scrape of `/metrics` serves the result of the latest successful scan and never waits for a scan to run, so scrape latency stays small regardless of how many dashboards and alert rules Grafana has.
 
 This has a few consequences:
 - **Data can be up to one `-scan-interval` old** (longer if a scan fails or takes longer than the interval).
 - **Before the first scan completes**, `/metrics` exposes only `sigprune_build_info` and `sigprune_up 0`.
 - **If a scan fails**, the exporter keeps serving the last successful result and sets `sigprune_up` to `0` until a scan succeeds again.
 
-Dashboards and alert rules usually change over hours, not minutes, so the `5m` default is a reasonable trade-off. Lower it for local testing (for example `-scan-interval 10s`); avoid very short intervals against a production Grafana, since every scan fetches every dashboard.
+Dashboards and alert rules usually change over hours, not minutes, so the `5m` default is a reasonable. Try to avoid very short intervals against a production Grafana, since every scan fetches every dashboard.
 
 
 ## Metrics Reference
