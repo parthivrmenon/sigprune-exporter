@@ -16,9 +16,7 @@ A sample dashboard is included in `docker/grafana/provisioning/dashboards/sigpru
 
 ### Importing the dashboard
 
-The dashboard is published on Grafana.com as ID **`25850`**. 
-
-You can also import `docker/grafana/provisioning/dashboards/sigprune.json` directly from this repo.
+Import `docker/grafana/provisioning/dashboards/sigprune.json` from this repo, then pick your Prometheus datasource.
 
 **Note:** For the dashboard to work correctly the job that scrapes sigprune-exporter must set `honor_labels: true`
 
