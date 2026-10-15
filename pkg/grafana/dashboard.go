@@ -1,6 +1,7 @@
 package grafana
 
 import (
+	"encoding/json"
 	"net/url"
 )
 
@@ -16,7 +17,7 @@ type DashboardPanelTarget struct {
 }
 
 type DashboardPanel struct {
-	ID      int                    `json:"id"`
+	ID      json.RawMessage        `json:"id"`
 	UID     string                 `json:"uid"`
 	Title   string                 `json:"title"`
 	Targets []DashboardPanelTarget `json:"targets"`
