@@ -172,6 +172,14 @@ func (s *Scanner) Scan() (ScanResult, error) {
 			metricNames := utils.ExtractMetricNames(expr)
 			metrics = append(metrics, metricNames...)
 		}
+
+		templateExprs := grafana.GetDashboardTemplateQueries(*dashboardResponse)
+		for _, expr := range templateExprs {
+			metricNames, labelNames := utils.ExtractMetricsAndLabelsFromTemplateQuery(expr)
+			labels = append(labels, labelNames...)
+			metrics = append(metrics, metricNames...)
+
+		}
 	}
 
 	// Scan Alert Rules
