@@ -101,15 +101,21 @@ func GetDashboardTemplateQueries(d DashboardResponse) []string {
 	var q []string
 	for _, t := range d.Dashboard.Templating.List {
 		if t.Type == "query" {
-			var tq TemplateQuery
-			err := json.Unmarshal((t.Query), &tq)
-			if err != nil {
-				return q
+			// query can be a string like "query": "..."
+			// or a nested JSON like {"query": "...", "refId": "..."}.
+			// a null "query": "" is ignored
+			var s string
+			if err := json.Unmarshal(t.Query, &s); err == nil {
+				if s != "" {
+					q = append(q, s)
+				}
+				continue
 			}
-			q = append(q, tq.Query)
-
+			var tq TemplateQuery
+			if err := json.Unmarshal(t.Query, &tq); err == nil && tq.Query != "" {
+				q = append(q, tq.Query)
+			}
 		}
-
 	}
 	return q
 }
