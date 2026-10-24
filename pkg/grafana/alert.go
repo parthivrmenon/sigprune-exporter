@@ -36,7 +36,7 @@ func (c *Client) GetAlertRules() ([]AlertRule, error) {
 	return alertRules, nil
 }
 
-func GetAlertRuleExprs(a AlertRule) []string {
+func (a *AlertRule) Exprs() []string {
 	var allExprs []string
 	for _, queryData := range a.Data {
 		if queryData.Model.Expr != "" {

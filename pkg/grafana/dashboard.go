@@ -81,7 +81,7 @@ func (c *Client) GetDashboardByUID(uid string) (*DashboardResponse, error) {
 	return &dashboardResponse, nil
 }
 
-func GetDashboardPanelExprs(d DashboardResponse) []string {
+func (d *DashboardResponse) PanelExprs() []string {
 	return collectPanelExprs(d.Dashboard.Panels, nil)
 }
 
@@ -97,13 +97,13 @@ func collectPanelExprs(panels []DashboardPanel, exprs []string) []string {
 	return exprs
 }
 
-func GetDashboardTemplateQueries(d DashboardResponse) []string {
+func (d *DashboardResponse) TemplateQueries() []string {
 	var q []string
 	for _, t := range d.Dashboard.Templating.List {
 		if t.Type == "query" {
 			// query can be a string like "query": "..."
 			// or a nested JSON like {"query": "...", "refId": "..."}.
-			// a null "query": "" is ignored
+			// a null query hits both branches so a continue is required to ignore it correctly
 			var s string
 			if err := json.Unmarshal(t.Query, &s); err == nil {
 				if s != "" {
