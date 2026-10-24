@@ -26,15 +26,30 @@ type DashboardPanel struct {
 	Panels []DashboardPanel `json:"panels"`
 }
 
+type Templating struct {
+	List []TemplateVar `json:"list"`
+}
+
+type TemplateVar struct {
+	Name  string          `json:"name"`
+	Type  string          `json:"type"`
+	Query json.RawMessage `json:"query"`
+}
+
+type TemplateQuery struct {
+	Query string `json:"query"`
+}
+
 type DashboardResponse struct {
 	Meta struct {
 		Type string `json:"type"`
 	} `json:"meta"`
 	Dashboard struct {
-		ID     int              `json:"id"`
-		UID    string           `json:"uid"`
-		Title  string           `json:"title"`
-		Panels []DashboardPanel `json:"panels"`
+		ID         int              `json:"id"`
+		UID        string           `json:"uid"`
+		Title      string           `json:"title"`
+		Panels     []DashboardPanel `json:"panels"`
+		Templating Templating       `json:"templating"`
 	} `json:"dashboard"`
 }
 
@@ -66,7 +81,7 @@ func (c *Client) GetDashboardByUID(uid string) (*DashboardResponse, error) {
 	return &dashboardResponse, nil
 }
 
-func GetDashboardPanelExprs(d DashboardResponse) []string {
+func (d *DashboardResponse) PanelExprs() []string {
 	return collectPanelExprs(d.Dashboard.Panels, nil)
 }
 
@@ -80,6 +95,29 @@ func collectPanelExprs(panels []DashboardPanel, exprs []string) []string {
 		exprs = collectPanelExprs(panel.Panels, exprs)
 	}
 	return exprs
+}
+
+func (d *DashboardResponse) TemplateQueries() []string {
+	var q []string
+	for _, t := range d.Dashboard.Templating.List {
+		if t.Type == "query" {
+			// query can be a string like "query": "..."
+			// or a nested JSON like {"query": "...", "refId": "..."}.
+			// a null query hits both branches so a continue is required to ignore it correctly
+			var s string
+			if err := json.Unmarshal(t.Query, &s); err == nil {
+				if s != "" {
+					q = append(q, s)
+				}
+				continue
+			}
+			var tq TemplateQuery
+			if err := json.Unmarshal(t.Query, &tq); err == nil && tq.Query != "" {
+				q = append(q, tq.Query)
+			}
+		}
+	}
+	return q
 }
 
 func (c *Client) GetDatasources() ([]Datasource, error) {

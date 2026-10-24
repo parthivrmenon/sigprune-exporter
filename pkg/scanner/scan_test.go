@@ -64,13 +64,11 @@ func TestScan(t *testing.T) {
 		"prometheus_http_requests_total",
 		"node_filesystem_device_error",
 		"node_filesystem_readonly",
-		"node_scrape_collector_success",
 		"node_scrape_collector_duration_seconds",
 	}
 
 	expectedUnusedLabels := []string{
 		"handler",
-		"collector",
 	}
 
 	if len(result.UnusedMetrics) != len(expectedUnusedMetrics) {
@@ -118,10 +116,10 @@ func TestScan(t *testing.T) {
 		AlertRuleCount:     4,  // From alert_rules.json
 		TotalTSDBMetrics:   5,  // From tsdb_status.json (limited by tsdb-metrics-limit=5)
 		TotalTSDBLabels:    6,  // Every label in tsdb_status.json, before system-label filtering
-		TotalUsedMetrics:   10, // Distinct metric names across dashboard + alert rule exprs (11 occurrences)
-		TotalUsedLabels:    4,  // Distinct label names: instance, job, mode, mountpoint (10 occurrences)
-		TotalUnusedMetrics: 5,  // All TSDB metrics are unused
-		TotalUnusedLabels:  2,  // handler, collector are unused
+		TotalUsedMetrics:   11, // Distinct metric names across dashboard + alert rule exprs + template vars
+		TotalUsedLabels:    5,  // Distinct label names;
+		TotalUnusedMetrics: 4,  // Only node_scrape_collector_success is used; every other TSDB metric is unused
+		TotalUnusedLabels:  1,  // Only handler is unused
 		MetricsExportLimit: 5,  // From scanner config
 		LabelsExportLimit:  5,  // From scanner config
 	}

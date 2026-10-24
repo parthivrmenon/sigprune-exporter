@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func loadDashboard(t *testing.T, path string) DashboardResponse {
+func loadDashboard(t *testing.T, path string) *DashboardResponse {
 	t.Helper()
 	b, err := os.ReadFile(path)
 	if err != nil {
@@ -18,15 +18,15 @@ func loadDashboard(t *testing.T, path string) DashboardResponse {
 	if err := json.Unmarshal(b, &d); err != nil {
 		t.Fatalf("failed to decode fixture: %v", err)
 	}
-	return d
+	return &d
 }
 
 // Both fixtures are the same dashboard fetched from Grafana 13.1: once with its
 // rows expanded, and once saved with both rows collapsed, which moves every
 // panel into its row's "panels" array. The exprs found must be identical.
-func TestGetDashboardPanelExprsCollapsedRows(t *testing.T) {
-	expanded := GetDashboardPanelExprs(loadDashboard(t, "testdata/dashboard_rows_expanded.json"))
-	collapsed := GetDashboardPanelExprs(loadDashboard(t, "testdata/dashboard_rows_collapsed.json"))
+func TestPanelExprsCollapsedRows(t *testing.T) {
+	expanded := loadDashboard(t, "testdata/dashboard_rows_expanded.json").PanelExprs()
+	collapsed := loadDashboard(t, "testdata/dashboard_rows_collapsed.json").PanelExprs()
 
 	if len(expanded) != 28 {
 		t.Fatalf("expected 28 exprs from the expanded dashboard, got %d", len(expanded))

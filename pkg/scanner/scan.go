@@ -165,12 +165,18 @@ func (s *Scanner) Scan() (ScanResult, error) {
 		if err != nil {
 			return ScanResult{}, err
 		}
-		panelExprs := grafana.GetDashboardPanelExprs(*dashboardResponse)
-		for _, expr := range panelExprs {
+		for _, expr := range dashboardResponse.PanelExprs() {
 			labelNames := utils.ExtractLabelNames(expr)
 			labels = append(labels, labelNames...)
 			metricNames := utils.ExtractMetricNames(expr)
 			metrics = append(metrics, metricNames...)
+		}
+
+		for _, query := range dashboardResponse.TemplateQueries() {
+			metricNames, labelNames := utils.ExtractMetricsAndLabelsFromTemplateQuery(query)
+			labels = append(labels, labelNames...)
+			metrics = append(metrics, metricNames...)
+
 		}
 	}
 
@@ -183,8 +189,7 @@ func (s *Scanner) Scan() (ScanResult, error) {
 	scanResult.AlertRuleCount = len(alerts)
 
 	for _, alert := range alerts {
-		alertExprs := grafana.GetAlertRuleExprs(alert)
-		for _, expr := range alertExprs {
+		for _, expr := range alert.Exprs() {
 			labelNames := utils.ExtractLabelNames(expr)
 			labels = append(labels, labelNames...)
 			metricNames := utils.ExtractMetricNames(expr)
