@@ -1,0 +1,16 @@
+# Prometheus-native alerting rules.
+#
+# These exist so the local stack has a usage source that lives in Prometheus
+# rather than in Grafana. node_filesystem_readonly appears in no provisioned
+# dashboard and no Grafana alert, so sigprune reports it as unused until
+# Issue 2 counts rule_files as a usage source.
+groups:
+  - name: node-exporter-alerts
+    rules:
+      - alert: NodeFilesystemReadOnly
+        expr: node_filesystem_readonly{fstype!="tmpfs"} == 1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: Filesystem is read-only on {{ $labels.instance }}

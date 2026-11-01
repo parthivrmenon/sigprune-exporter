@@ -3,7 +3,7 @@
 sigprune_build_info{revision="unknown",version="dev"} 1
 # HELP sigprune_unused_label_cardinality Series count of a top-K unused label
 # TYPE sigprune_unused_label_cardinality gauge
-sigprune_unused_label_cardinality{job="node-exporter",label="handler"} 49
+sigprune_unused_label_cardinality{job="node-exporter",label="handler"} 59
 sigprune_unused_label_cardinality{job="prometheus",label="handler"} 65
 # HELP sigprune_unused_metric_cardinality Series count of a top-K unused metric
 # TYPE sigprune_unused_metric_cardinality gauge

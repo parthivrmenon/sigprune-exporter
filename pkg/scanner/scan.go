@@ -197,6 +197,19 @@ func (s *Scanner) Scan() (ScanResult, error) {
 		}
 	}
 
+	// Scan Prometheus alerting and recording rules
+	prometheusRules, err := g.PrometheusRules(s.datasource)
+	if err != nil {
+		return ScanResult{}, err
+	}
+
+	for _, expr := range prometheusRules.Exprs() {
+		labelNames := utils.ExtractLabelNames(expr)
+		labels = append(labels, labelNames...)
+		metricNames := utils.ExtractMetricNames(expr)
+		metrics = append(metrics, metricNames...)
+	}
+
 	// create a used labels Set for lookup
 	usedLabelSet := make(map[string]bool, len(labels))
 	for _, m := range labels {
