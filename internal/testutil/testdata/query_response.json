@@ -15,26 +15,6 @@
       },
       {
         "metric": {
-          "__name__": "node_filesystem_readonly",
-          "job": "node-exporter"
-        },
-        "value": [
-          1785563754.783,
-          "59"
-        ]
-      },
-      {
-        "metric": {
-          "__name__": "node_scrape_collector_duration_seconds",
-          "job": "node-exporter"
-        },
-        "value": [
-          1785563754.783,
-          "49"
-        ]
-      },
-      {
-        "metric": {
           "__name__": "prometheus_http_requests_total",
           "job": "prometheus"
         },

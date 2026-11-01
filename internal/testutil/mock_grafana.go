@@ -21,6 +21,7 @@ func NewMockGrafanaServer() *httptest.Server {
 	dashboardDetailData, _ := testdataFS.ReadFile("testdata/dashboard_detail.json")
 	alertRulesData, _ := testdataFS.ReadFile("testdata/alert_rules.json")
 	tsdbStatusData, _ := testdataFS.ReadFile("testdata/tsdb_status.json")
+	prometheusRulesData, _ := testdataFS.ReadFile("testdata/prometheus_rules.json")
 	queryResponseData, _ := testdataFS.ReadFile("testdata/query_response.json")
 	queryResponseLimitData, _ := testdataFS.ReadFile("testdata/query_response_limit.json")
 
@@ -42,6 +43,8 @@ func NewMockGrafanaServer() *httptest.Server {
 			w.Write(alertRulesData)
 		case "/api/datasources/proxy/uid/" + MockDatasource + "/api/v1/status/tsdb":
 			w.Write(tsdbStatusData)
+		case "/api/datasources/proxy/uid/" + MockDatasource + "/api/v1/rules":
+			w.Write(prometheusRulesData)
 		case "/api/datasources/proxy/uid/" + MockDatasource + "/api/v1/query":
 			query := r.URL.Query().Get("query")
 			// If query has only one metric (limit test), use limit fixture

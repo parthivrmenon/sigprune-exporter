@@ -1,0 +1,54 @@
+{
+  "status": "success",
+  "data": {
+    "groups": [
+      {
+        "name": "node-exporter-alerts",
+        "file": "/etc/prometheus/rules/node_alerts.yml",
+        "rules": [
+          {
+            "state": "inactive",
+            "name": "NodeFilesystemReadOnly",
+            "query": "node_filesystem_readonly{fstype!=\"tmpfs\"} == 1",
+            "duration": 300,
+            "keepFiringFor": 0,
+            "labels": {
+              "severity": "critical"
+            },
+            "annotations": {
+              "summary": "Filesystem is read-only on {{ $labels.instance }}"
+            },
+            "alerts": [],
+            "health": "ok",
+            "evaluationTime": 0.000312,
+            "lastEvaluation": "2026-11-01T06:12:00.123456789Z",
+            "type": "alerting"
+          }
+        ],
+        "interval": 30,
+        "limit": 0,
+        "evaluationTime": 0.000481,
+        "lastEvaluation": "2026-11-01T06:12:00.123456789Z"
+      },
+      {
+        "name": "node-exporter-recording",
+        "file": "/etc/prometheus/rules/node_recording.yml",
+        "rules": [
+          {
+            "name": "node:scrape_collector_duration_seconds:avg5m",
+            "query": "avg by (collector) (rate(node_scrape_collector_duration_seconds[5m]))",
+            "labels": {},
+            "health": "ok",
+            "evaluationTime": 0.000141,
+            "lastEvaluation": "2026-11-01T06:12:00.123456789Z",
+            "type": "recording"
+          }
+        ],
+        "interval": 30,
+        "limit": 0,
+        "evaluationTime": 0.000169,
+        "lastEvaluation": "2026-11-01T06:12:00.123456789Z"
+      }
+    ]
+  }
+}

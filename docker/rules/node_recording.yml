@@ -1,0 +1,11 @@
+# Prometheus-native recording rules.
+#
+# Same purpose as node_alerts.yml: node_scrape_collector_duration_seconds is
+# referenced nowhere in Grafana. Note that the recorded series this creates,
+# node:scrape_collector_duration_seconds:avg5m, becomes a TSDB metric in its
+# own right - and is genuinely unused until something queries it.
+groups:
+  - name: node-exporter-recording
+    rules:
+      - record: node:scrape_collector_duration_seconds:avg5m
+        expr: avg by (collector) (rate(node_scrape_collector_duration_seconds[5m]))
