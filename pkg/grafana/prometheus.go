@@ -26,7 +26,7 @@ type LabelCount struct {
 	Value int64  `json:"value"`
 }
 
-func (c *Client) GetTSDBStatus(datasourceUID string, limit int) (TSDBStatus, error) {
+func (c *Client) TSDBStatus(datasourceUID string, limit int) (TSDBStatus, error) {
 	tsdbURI := fmt.Sprintf("/api/datasources/proxy/uid/%s/api/v1/status/tsdb", datasourceUID)
 	params := url.Values{
 		"limit": {strconv.Itoa(limit)},

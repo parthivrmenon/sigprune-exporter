@@ -127,7 +127,7 @@ func (s *Scanner) Scan() (ScanResult, error) {
 
 	g := s.newGrafanaClient()
 
-	tsdbStatus, err := g.GetTSDBStatus(s.datasource, s.tsdbMetricsLimit)
+	tsdbStatus, err := g.TSDBStatus(s.datasource, s.tsdbMetricsLimit)
 	if err != nil {
 		return ScanResult{}, err
 	}
@@ -152,7 +152,7 @@ func (s *Scanner) Scan() (ScanResult, error) {
 	}
 
 	// Scan Dashboards
-	dashboards, err := g.GetDashboards()
+	dashboards, err := g.ListDashboards()
 	if err != nil {
 		return ScanResult{}, err
 	}
@@ -161,7 +161,7 @@ func (s *Scanner) Scan() (ScanResult, error) {
 	var metrics []string
 	var labels []string
 	for _, dashboard := range dashboards {
-		dashboardResponse, err := g.GetDashboardByUID(dashboard.UID)
+		dashboardResponse, err := g.GetDashboard(dashboard.UID)
 		if err != nil {
 			return ScanResult{}, err
 		}
