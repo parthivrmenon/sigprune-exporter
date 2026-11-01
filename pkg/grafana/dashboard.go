@@ -62,7 +62,7 @@ type Datasource struct {
 	Access string `json:"access"`
 }
 
-func (c *Client) GetDashboards() ([]Dashboard, error) {
+func (c *Client) ListDashboards() ([]Dashboard, error) {
 	var d []Dashboard
 	err := c.getJSON("/api/search", url.Values{"type": {"dash-db"}}, &d)
 	if err != nil {
@@ -71,7 +71,7 @@ func (c *Client) GetDashboards() ([]Dashboard, error) {
 	return d, nil
 }
 
-func (c *Client) GetDashboardByUID(uid string) (*DashboardResponse, error) {
+func (c *Client) GetDashboard(uid string) (*DashboardResponse, error) {
 	var dashboardResponse DashboardResponse
 	err := c.getJSON("/api/dashboards/uid/"+uid, nil, &dashboardResponse)
 	if err != nil {
