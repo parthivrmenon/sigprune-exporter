@@ -58,18 +58,37 @@ func ExtractLabelNames(expr string) []string {
 	}
 	var names []string
 	seen := make(map[string]bool)
+
+	// __name__ is an internal label
+	// mark it as seen so that it's ignored in every case
+	seen["__name__"] = true
+
+	add := func(l string) {
+		if !seen[l] {
+			names = append(names, l)
+			seen[l] = true
+		}
+	}
+
 	parser.Inspect(ast, func(node parser.Node, _ []parser.Node) error {
 		if vs, ok := node.(*parser.VectorSelector); ok {
 			for _, matcher := range vs.LabelMatchers {
-				// Skip __name__ as it's an internal label
-				if matcher.Name == "__name__" {
-					continue
-				}
-				if !seen[matcher.Name] {
-					names = append(names, matcher.Name)
-					seen[matcher.Name] = true
-				}
+				add(matcher.Name)
 			}
+		}
+		if ae, ok := node.(*parser.AggregateExpr); ok {
+			for _, groupingLabel := range ae.Grouping {
+				add(groupingLabel)
+			}
+		}
+		if be, ok := node.(*parser.BinaryExpr); ok && be.VectorMatching != nil {
+			for _, label := range be.VectorMatching.MatchingLabels {
+				add(label)
+			}
+			for _, label := range be.VectorMatching.Include {
+				add(label)
+			}
+
 		}
 		return nil
 	})
