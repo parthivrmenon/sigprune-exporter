@@ -60,18 +60,19 @@ func (s *Scanner) newGrafanaClient() *grafana.Client {
 }
 
 type ScanResult struct {
-	UnusedMetrics      map[string]map[string]int64
-	UnusedLabels       map[string]map[string]int64
-	DashboardCount     int
-	AlertRuleCount     int
-	TotalTSDBMetrics   int
-	TotalTSDBLabels    int
-	TotalUsedMetrics   int
-	TotalUsedLabels    int
-	TotalUnusedMetrics int
-	TotalUnusedLabels  int
-	MetricsExportLimit int
-	LabelsExportLimit  int
+	UnusedMetrics       map[string]map[string]int64
+	UnusedLabels        map[string]map[string]int64
+	DashboardCount      int
+	AlertRuleCount      int
+	PrometheusRuleCount int
+	TotalTSDBMetrics    int
+	TotalTSDBLabels     int
+	TotalUsedMetrics    int
+	TotalUsedLabels     int
+	TotalUnusedMetrics  int
+	TotalUnusedLabels   int
+	MetricsExportLimit  int
+	LabelsExportLimit   int
 }
 
 // Returns the result of the last successful scan. It is nil until the first scan completes
@@ -202,6 +203,17 @@ func (s *Scanner) Scan() (ScanResult, error) {
 	if err != nil {
 		return ScanResult{}, err
 	}
+
+	// TODO: A simpler way to fetch rule counts
+	// Both g.ListDashboards and g.GetAlertRules return
+	// a slice of something, so formalizing the interface
+	// of all usage source (dashboards, alert rules, prometheus rules...)
+	// might help simplify this whole thing
+	promRuleCount := 0
+	for _, group := range prometheusRules.RulesData.Groups {
+		promRuleCount += len(group.Rules)
+	}
+	scanResult.PrometheusRuleCount = promRuleCount
 
 	for _, expr := range prometheusRules.Exprs() {
 		labelNames := utils.ExtractLabelNames(expr)

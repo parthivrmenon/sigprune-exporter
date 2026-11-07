@@ -101,27 +101,29 @@ func TestScan(t *testing.T) {
 
 	// Assert statistics
 	expectedStats := struct {
-		DashboardCount     int
-		AlertRuleCount     int
-		TotalTSDBMetrics   int
-		TotalTSDBLabels    int
-		TotalUsedMetrics   int
-		TotalUsedLabels    int
-		TotalUnusedMetrics int
-		TotalUnusedLabels  int
-		MetricsExportLimit int
-		LabelsExportLimit  int
+		DashboardCount      int
+		AlertRuleCount      int
+		PrometheusRuleCount int
+		TotalTSDBMetrics    int
+		TotalTSDBLabels     int
+		TotalUsedMetrics    int
+		TotalUsedLabels     int
+		TotalUnusedMetrics  int
+		TotalUnusedLabels   int
+		MetricsExportLimit  int
+		LabelsExportLimit   int
 	}{
-		DashboardCount:     1,  // From dashboards.json
-		AlertRuleCount:     4,  // From alert_rules.json
-		TotalTSDBMetrics:   5,  // From tsdb_status.json (limited by tsdb-metrics-limit=5)
-		TotalTSDBLabels:    6,  // Every label in tsdb_status.json, before system-label filtering
-		TotalUsedMetrics:   13, // Distinct names across panel exprs, template vars, Grafana alerts and Prometheus rules
-		TotalUsedLabels:    6,  // collector, fstype, instance, job, mode, mountpoint
-		TotalUnusedMetrics: 2,  // prometheus_http_requests_total, node_filesystem_device_error
-		TotalUnusedLabels:  1,  // Only handler is unused
-		MetricsExportLimit: 5,  // From scanner config
-		LabelsExportLimit:  5,  // From scanner config
+		DashboardCount:      1,  // From dashboards.json
+		AlertRuleCount:      4,  // From alert_rules.json
+		PrometheusRuleCount: 2,  // From prometheus_rules.json (1 alerting + 1 recording)
+		TotalTSDBMetrics:    5,  // From tsdb_status.json (limited by tsdb-metrics-limit=5)
+		TotalTSDBLabels:     6,  // Every label in tsdb_status.json, before system-label filtering
+		TotalUsedMetrics:    13, // Distinct names across panel exprs, template vars, Grafana alerts and Prometheus rules
+		TotalUsedLabels:     6,  // collector, fstype, instance, job, mode, mountpoint
+		TotalUnusedMetrics:  2,  // prometheus_http_requests_total, node_filesystem_device_error
+		TotalUnusedLabels:   1,  // Only handler is unused
+		MetricsExportLimit:  5,  // From scanner config
+		LabelsExportLimit:   5,  // From scanner config
 	}
 
 	if result.DashboardCount != expectedStats.DashboardCount {
@@ -129,6 +131,9 @@ func TestScan(t *testing.T) {
 	}
 	if result.AlertRuleCount != expectedStats.AlertRuleCount {
 		t.Errorf("Expected AlertRuleCount %d, got %d", expectedStats.AlertRuleCount, result.AlertRuleCount)
+	}
+	if result.PrometheusRuleCount != expectedStats.PrometheusRuleCount {
+		t.Errorf("Expected PrometheusRuleCount %d, got %d", expectedStats.PrometheusRuleCount, result.PrometheusRuleCount)
 	}
 	if result.TotalTSDBMetrics != expectedStats.TotalTSDBMetrics {
 		t.Errorf("Expected TotalTSDBMetrics %d, got %d", expectedStats.TotalTSDBMetrics, result.TotalTSDBMetrics)

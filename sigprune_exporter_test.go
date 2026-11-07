@@ -27,6 +27,7 @@ func TestCollectSuccess(t *testing.T) {
 
 	if err := testutil.CollectAndCompare(exporter, expected,
 		"sigprune_build_info",
+		"sigprune_prometheus_rule_count",
 		"sigprune_up",
 		"sigprune_unused_label_cardinality",
 		"sigprune_unused_metric_cardinality",
@@ -75,6 +76,7 @@ func TestCollectStaleSnapshotAfterFailure(t *testing.T) {
 
 	if err := testutil.CollectAndCompare(exporter, expected,
 		"sigprune_build_info",
+		"sigprune_prometheus_rule_count",
 		"sigprune_up",
 		"sigprune_unused_label_cardinality",
 		"sigprune_unused_metric_cardinality",

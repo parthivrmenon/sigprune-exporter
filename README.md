@@ -7,6 +7,7 @@ A Prometheus exporter for detecting unused metrics and labels within a Grafana d
 A metric/label is considered 'unused' if:
 - it does not appear in any Grafana Dashboard
 - it does not appear in any Grafana Alert Rule
+- it does not appear in any Prometheus alerting or recording rule
 
 The exporter allows you to visualize these unused metrics and labels in a Grafana dashboard like the one below:
 
@@ -122,14 +123,15 @@ Dashboards and alert rules usually change over hours, not minutes, so the `5m` d
 |---|---|---|---|
 | `sigprune_build_info` | Gauge | `version`, `revision` | Always `1`. Exposes build version and git revision of the running binary |
 | `sigprune_up` | Gauge | — | `1` if the most recent background scan succeeded, `0` if it failed or no scan has completed yet. When `0` after a failure, the other metrics still show the last successful scan (see [How scanning works](#how-scanning-works)) |
-| `sigprune_unused_metric_cardinality` | Gauge | `job`, `metric` | Series count of a top-K unused metric (not referenced in any dashboard or alert rule) |
-| `sigprune_unused_label_cardinality` | Gauge | `job`, `label` | Series count of a top-K unused label (not referenced in any dashboard or alert rule) |
+| `sigprune_unused_metric_cardinality` | Gauge | `job`, `metric` | Series count of a top-K unused metric (not referenced in any dashboard, Grafana alert rule or Prometheus rule) |
+| `sigprune_unused_label_cardinality` | Gauge | `job`, `label` | Series count of a top-K unused label (not referenced in any dashboard, Grafana alert rule or Prometheus rule) |
 | `sigprune_dashboard_count` | Gauge | — | Number of Grafana dashboards analyzed |
 | `sigprune_alert_rule_count` | Gauge | — | Number of Grafana alert rules analyzed |
+| `sigprune_prometheus_rule_count` | Gauge | — | Number of Prometheus alerting and recording rules analyzed |
 | `sigprune_total_tsdb_metrics` | Gauge | — | Number of metric names returned by the Prometheus TSDB status API, capped at `-tsdb-metrics-limit`. If it equals the limit, Prometheus likely has more metrics than were analyzed |
 | `sigprune_total_tsdb_labels` | Gauge | — | Number of label names returned by the Prometheus TSDB status API, capped at `-tsdb-metrics-limit` |
-| `sigprune_total_used_metrics` | Gauge | — | Number of distinct metric names referenced in dashboards and alert rules. A metric used in 20 panels counts once |
-| `sigprune_total_used_labels` | Gauge | — | Number of distinct label names referenced in dashboards and alert rules |
+| `sigprune_total_used_metrics` | Gauge | — | Number of distinct metric names referenced in dashboards, Grafana alert rules and Prometheus rules. A metric used in 20 panels counts once |
+| `sigprune_total_used_labels` | Gauge | — | Number of distinct label names referenced in dashboards, Grafana alert rules and Prometheus rules |
 | `sigprune_total_unused_metrics` | Gauge | — | Number of unused metrics exported, capped at `-metrics-limit`. Not a true total: if it equals `sigprune_metrics_export_limit`, there are likely more unused metrics |
 | `sigprune_total_unused_labels` | Gauge | — | Number of unused labels exported, capped at `-labels-limit`. Not a true total: if it equals `sigprune_labels_export_limit`, there are likely more unused labels |
 | `sigprune_metrics_export_limit` | Gauge | — | Configured value of `-metrics-limit` |

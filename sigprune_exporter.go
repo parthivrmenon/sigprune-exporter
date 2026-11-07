@@ -20,6 +20,12 @@ var (
 	buildRevision = "unknown"
 )
 
+// Adding a new metric requires adding the metrics here into this struct as well as
+// - adding a new 'prometheus.NewDesc' into the NewExporter constructor
+// - publishing the description to the channel in 'Describe' method
+// - publishing the metric to the channel in 'Collect' method
+// - adding it to exporter's testdata/ golden files
+// - adding it to the README metrics table
 type Exporter struct {
 	scanner                             *scanner.Scanner
 	sigpruneBuildInfoDesc               *prometheus.Desc
@@ -28,6 +34,7 @@ type Exporter struct {
 	sigpruneUnusedLabelCardinalityDesc  *prometheus.Desc
 	sigpruneDashboardCountDesc          *prometheus.Desc
 	sigpruneAlertRuleCountDesc          *prometheus.Desc
+	sigprunePrometheusRuleCountDesc     *prometheus.Desc
 	sigpruneTotalTSDBMetricsDesc        *prometheus.Desc
 	sigpruneTotalTSDBLabelsDesc         *prometheus.Desc
 	sigpruneTotalUsedMetricsDesc        *prometheus.Desc
@@ -87,6 +94,12 @@ func NewExporter(tsdbMetricsLimit int, grafanaURL string, adminUser string, admi
 			nil,
 			nil,
 		),
+		sigprunePrometheusRuleCountDesc: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, "", "prometheus_rule_count"),
+			"Number of Prometheus rules analyzed for metric/label references",
+			nil,
+			nil,
+		),
 		sigpruneTotalTSDBMetricsDesc: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "", "total_tsdb_metrics"),
 			"Total number of metrics retrieved from TSDB status API (limited by tsdb-metrics-limit)",
@@ -101,13 +114,13 @@ func NewExporter(tsdbMetricsLimit int, grafanaURL string, adminUser string, admi
 		),
 		sigpruneTotalUsedMetricsDesc: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "", "total_used_metrics"),
-			"Number of unique metrics referenced in dashboards and alert rules",
+			"Number of unique metrics referenced in dashboards and rules",
 			nil,
 			nil,
 		),
 		sigpruneTotalUsedLabelsDesc: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "", "total_used_labels"),
-			"Number of unique labels referenced in dashboards and alert rules",
+			"Number of unique labels referenced in dashboards and rules",
 			nil,
 			nil,
 		),
@@ -145,6 +158,7 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	ch <- e.sigpruneUnusedLabelCardinalityDesc
 	ch <- e.sigpruneDashboardCountDesc
 	ch <- e.sigpruneAlertRuleCountDesc
+	ch <- e.sigprunePrometheusRuleCountDesc
 	ch <- e.sigpruneTotalTSDBMetricsDesc
 	ch <- e.sigpruneTotalTSDBLabelsDesc
 	ch <- e.sigpruneTotalUsedMetricsDesc
@@ -219,6 +233,11 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 		e.sigpruneAlertRuleCountDesc,
 		prometheus.GaugeValue,
 		float64(snap.AlertRuleCount),
+	)
+	ch <- prometheus.MustNewConstMetric(
+		e.sigprunePrometheusRuleCountDesc,
+		prometheus.GaugeValue,
+		float64(snap.PrometheusRuleCount),
 	)
 	ch <- prometheus.MustNewConstMetric(
 		e.sigpruneTotalTSDBMetricsDesc,
