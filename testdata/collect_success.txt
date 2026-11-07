@@ -1,6 +1,9 @@
 # HELP sigprune_build_info Build information
 # TYPE sigprune_build_info gauge
 sigprune_build_info{revision="unknown",version="dev"} 1
+# HELP sigprune_prometheus_rule_count Number of Prometheus rules analyzed for metric/label references
+# TYPE sigprune_prometheus_rule_count gauge
+sigprune_prometheus_rule_count 2
 # HELP sigprune_unused_label_cardinality Series count of a top-K unused label
 # TYPE sigprune_unused_label_cardinality gauge
 sigprune_unused_label_cardinality{job="node-exporter",label="handler"} 59
